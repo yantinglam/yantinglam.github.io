@@ -1,0 +1,247 @@
+<!DOCTYPE html><html lang="zh-cn"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="author" content="Yanting Lam"><meta name="description" content="&amp;emsp;&amp;emsp;从单体式架构迁移到微服务架构不应该通过从头重写代码的方式实现，而是应该通过逐步迁移的方式。"><meta name="keywords" content="微服务"><title>从单体式架构迁移到微服务架构 · Yanting Lam</title><link rel="icon" href="/favicon.ico"><link rel="canonical" href="http://yantinglam.com/2016/12/16/Microservices-2016-12-16-Single-mode-app-to-micro-service/"><link rel="alternate" href="/atom.xml" title="Yanting Lam"><link rel="stylesheet" href="/css/style.css"><script type="text/javascript">var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?8e7c7417ad2e322a37d13dc7cdc5454e";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script><script src="https://cdn1.lncld.net/static/js/av-min-1.2.1.js"></script><script type="text/javascript">AV.initialize("h9D4obRhn4aqzazLSG9Kxa2k-gzGzoHsz", "pRL4WjJEgaARQXXRWHLXbBgw")</script></head><body><div id="main"><header><a href="/." class="logo">Yanting Lam</a><ul class="nav"><li class="nav-link"><a href="/" target="_self">首页</a></li><li class="nav-link"><a href="/archives/" target="_self">归档</a></li><li class="nav-link"><a href="/tags/" target="_self">标签</a></li><li class="nav-link"><a href="/photography/" target="_self">摄影集</a></li></ul></header><section id="container"><article class="post"><h1 class="post-title">从单体式架构迁移到微服务架构</h1><p class="post-meta"><span class="post-time">发表于 2016-12-16</span><span id="/2016/12/16/Microservices-2016-12-16-Single-mode-app-to-micro-service/" data-flag-title="从单体式架构迁移到微服务架构" class="leancloud-visitors"><span class="leancloud-visitors-text">阅读次数 </span><span class="leancloud-visitors-count"></span></span></p><div id="sidebar" class="post-sidebar"><h3 class="heading">目录</h3><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#停止挖掘"><span class="toc-text">停止挖掘</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#停止挖掘的优点："><span class="toc-text">停止挖掘的优点：</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#前后端分离"><span class="toc-text">前后端分离</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#前后端分离的好处："><span class="toc-text">前后端分离的好处：</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#抽出服务"><span class="toc-text">抽出服务</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#模块抽取的顺序"><span class="toc-text">模块抽取的顺序</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#抽取步骤"><span class="toc-text">抽取步骤</span></a></li></ol></li></ol></div><div class="post-content"><p>&emsp;&emsp;从单体式架构迁移到微服务架构不应该通过从头重写代码的方式实现，而是应该通过逐步迁移的方式。<br><a id="more"></a></p>
+<h3 id="停止挖掘"><a href="#停止挖掘" class="headerlink" title="停止挖掘"></a>停止挖掘</h3><p>&emsp;&emsp;停止挖掘就是将新功能以一个独立的微服务方式实现，而不是往旧单体应用上继续添加代码，新的微服务通过接口接入到旧的单体应用中。</p>
+<p>&emsp;&emsp;除了将新功能开发为新服务之外，还需要增加两个模块来将旧单体应用与新服务连接起来，这两个模块分别是：</p>
+<ul>
+<li><p>请求路由器</p>
+<p class="li-explanation">&emsp;&emsp;负责处理入口（http）请求，将新功能的请求发送给新服务，将传统请求发送到传统单体应用。</p>
+</li>
+<li><p>glue code（胶水代码，也称为容灾层）</p>
+<p class="li-explanation">&emsp;&emsp;将微服务和单体应用集成起来，保护微服务全新域模型免受传统单体应用域模型的污染；而且还负责数据整合，提供两种模型间的翻译功能<br>&emsp;&emsp;glue code可以是在单体应用处，可以是在微服务处，也可以两都兼而有之。</p>
+
+</li>
+</ul>
+<p><img src="/images/Microservices/Single-mode-app-to-micro-service/Add-new-service-to-single-mode-app.png" width="400" height="400"></p>
+<h4 id="停止挖掘的优点："><a href="#停止挖掘的优点：" class="headerlink" title="停止挖掘的优点："></a>停止挖掘的优点：</h4><ul>
+<li>阻止单体应用变得更加的无法管理</li>
+<li>微服务本身可以开发、部署和独立扩展</li>
+</ul>
+<h3 id="前后端分离"><a href="#前后端分离" class="headerlink" title="前后端分离"></a>前后端分离</h3><p>&emsp;&emsp;前后端分离是将表现层与业务数据访问层分离，通过若干方面组成的粗粒度APIs将单体业务分割成两个更小的应用。<br><img src="/images/Microservices/Single-mode-app-to-micro-service/Separating-front-end-and-back-end.png" width="600" height="600"></p>
+<h4 id="前后端分离的好处："><a href="#前后端分离的好处：" class="headerlink" title="前后端分离的好处："></a>前后端分离的好处：</h4><ul>
+<li>使得应用分成两部分进行开发、部署和扩展</li>
+<li>允许表现层开发者在用户界面上快速选择，进行A/B测试</li>
+<li>一些远程API可以被微服务调用</li>
+</ul>
+<h3 id="抽出服务"><a href="#抽出服务" class="headerlink" title="抽出服务"></a>抽出服务</h3><p>&emsp;&emsp;将现成的模块抽取变成微服务。</p>
+<h4 id="模块抽取的顺序"><a href="#模块抽取的顺序" class="headerlink" title="模块抽取的顺序"></a>模块抽取的顺序</h4><ul>
+<li>根据获准程序排序，先抽取获益最大的，一般从经常变化的模块开始获益最大</li>
+<li>根据资源消耗程度排序，一般先抽取资源消耗最大的开始</li>
+<li>根据现有粗粒度边界来排序，将拥有粗粒度边界的两部分拆分</li>
+</ul>
+<h4 id="抽取步骤"><a href="#抽取步骤" class="headerlink" title="抽取步骤"></a>抽取步骤</h4><ol>
+<li>定义好模块和单体应用之间粗粒度接口</li>
+<li>将模块转换成独立服务</li>
+<li>开发、部署和扩展另外一个服务</li>
+</ol>
+<p><br><br>参考链接：<br><a href="http://dockone.io/article/1266" target="_blank" rel="external">微服务实践（七）：从单体式架构迁移到微服务架构</a></p>
+</div></article><div class="tags"><a href="/tags/微服务/">微服务</a></div><div class="paginator"><a href="/2016/12/20/SpringCloud-2016-12-20-Spring-Cloud-service-discovery/" class="prev"><i class="iconfont icon-left"></i><span> 上一页</span></a><a href="/2016/12/16/Microservices-2016-12-16-Deployment-strategy-of-micro-service/" class="next"><span>下一页</span><i class="iconfont icon-right"></i></a></div><section id="comments"><div data-thread-key="http://yantinglam.com/2016/12/16/Microservices-2016-12-16-Single-mode-app-to-micro-service/index.html" data-title="从单体式架构迁移到微服务架构" data-url="http://yantinglam.com/2016/12/16/Microservices-2016-12-16-Single-mode-app-to-micro-service/index.html" class="ds-thread"></div><script type="text/javascript">var duoshuoQuery = {short_name: "yantinglam" };
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();</script></section></section><footer><div class="social"><a href="mailto:linyantingly@163.com" title="email" class="iconfont icon-email"></a><a href="https://github.com/yantinglam" title="github" class="iconfont icon-github"></a><a href="/atom.xml" title="rss" class="iconfont icon-rss"></a></div><div class="friendly-links"><h6 class="friendly-links-text">友情链接</h6><a href="http://davidleee.com/" class="friendly-links-url">David Lee(IOS工程师)</a></div><div class="copyright"><p class="power">Powered by <a href="https://hexo.io/">Hexo</a> and Theme by <a href="https://github.com/ahonn/hexo-theme-even"> Even</a></p><p class="since">&copy;2017<span class="heart"><i class="iconfont icon-heart"></i></span><span class="author">Yanting Lam</span></p><p class="calculate"><script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次</span></p></div><div id="back2top"><i class="iconfont icon-up"></i></div></footer></div><script src="/js/zepto.min.js"></script><script src="/js/theme.js"></script><script type="text/javascript">function showPostTime(Counter) {
+    var query = new AV.Query(Counter);
+    var entries = [];
+    var $visitors = $(".leancloud-visitors");
+
+    $visitors.each(function () {
+      entries.push( $(this).attr("id").trim() );
+    });
+
+    query.containedIn('url', entries);
+    query.find()
+      .done(function (results) {
+        var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+        $visitors.find(COUNT_CONTAINER_REF).text(0);
+
+        for (var i = 0; i < results.length; i++) {
+          var item = results[i];
+          var url = item.get('url');
+          var time = item.get('time');
+          var element = document.getElementById(url);
+
+          $(element).find(COUNT_CONTAINER_REF).text(time);
+        }
+      })
+      .fail(function (object, error) {
+        console.log("Error: " + error.code + " " + error.message);
+      });
+  }
+
+  function addPostCount(Counter) {
+    var $visitors = $(".leancloud-visitors");
+    var url = $visitors.attr('id').trim();
+    var title = $visitors.attr('data-flag-title').trim();
+    var query = new AV.Query(Counter);
+
+    query.equalTo("url", url);
+    query.find({
+      success: function(results) {
+        if (results.length > 0) {
+          var counter = results[0];
+          counter.fetchWhenSave(true);
+          counter.increment("time");
+          counter.save(null, {
+            success: function(counter) {
+              var $element = $(document.getElementById(url));
+              $element.find('.leancloud-visitors-count').text(counter.get('time'));
+            },
+            error: function(counter, error) {
+              console.log('Failed to save Visitor num, with error message: ' + error.message);
+            }
+          });
+        } else {
+          var newcounter = new Counter();
+          newcounter.set("title", title);
+          newcounter.set("url", url);
+          newcounter.set("time", 1);
+          newcounter.save(null, {
+            success: function(newcounter) {
+              var $element = $(document.getElementById(url));
+              $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+            },
+            error: function(newcounter, error) {
+              console.log('Failed to create');
+            }
+          });
+        }
+      },
+      error: function(error) {
+        console.log('Error:' + error.code + " " + error.message);
+      }
+    });
+  }
+
+  $(function() {
+    var Counter = AV.Object.extend("Counter");
+    if ($('.leancloud-visitors').length == 1) {
+      addPostCount(Counter);
+    } else if ($('.post-link').length > 1) {
+      showPostTime(Counter);
+    }
+  });
+</script><script type="text/javascript">function showLikeTime() {
+  //- var LikeCounter = AV.Object.extend("LikeCounter");
+  var query = new AV.Query("LikeCounter");
+  var entries = [];
+  var $like = $(".photo-meta");
+
+  $like.each(function () {
+    entries.push( $(this).attr("id").trim() );
+  });
+
+  query.find()
+    .done(function (results) {
+      console.log(results);
+      var COUNT_CONTAINER_REF = '.like-num';
+
+      $like.find(COUNT_CONTAINER_REF).text(0);
+
+      for (var i = 0; i < results.length; i++) {
+        var item = results[i];
+        var name = item.get('name');
+        var time = item.get('time');
+        var element = document.getElementById(name);
+
+        $(element).find(COUNT_CONTAINER_REF).text(time);
+      }
+    })
+    .fail(function (object, error) {
+      console.log("Error: " + error.code + " " + error.message);
+    });
+}
+
+function addLikeCount(name) {
+  var LikeCounter = AV.Object.extend("LikeCounter");
+  var query = new AV.Query(LikeCounter);
+
+  query.equalTo("name", name);
+  query.find({
+    success: function(results) {
+      console.log(results);
+      if (results.length > 0) {
+        var counter = results[0];
+        counter.fetchWhenSave(true);
+        counter.increment("time");
+        counter.save(null, {
+          success: function(counter) {
+            var $element = $(document.getElementById(name));
+            $element.find('.like-num').text(counter.get('time'));
+          },
+          error: function(counter, error) {
+            console.log('Failed to save Visitor num, with error message: ' + error.message);
+          }
+        });
+      } else {
+        var newcounter = new LikeCounter();
+        newcounter.set("name", name);
+        newcounter.set("time", 1);
+        newcounter.save(null, {
+          success: function(newcounter) {
+            var $element = $(document.getElementById(name));
+            $element.find('.like-num').text(newcounter.get('time'));
+          },
+          error: function(newcounter, error) {
+            console.log('Failed to create');
+          }
+        });
+      }
+    },
+    error: function(error) {
+      console.log('Error:' + error.code + " " + error.message);
+    }
+  });
+}
+
+function deleteLikeCount(name) {
+  var LikeCounter = AV.Object.extend("LikeCounter");
+  var query = new AV.Query(LikeCounter);
+
+  query.equalTo("name", name);
+  query.find({
+    success: function(results) {
+      console.log(results);
+      if (results.length > 0) {
+        var counter = results[0];
+        counter.fetchWhenSave(true);
+        counter.increment("time", -1);
+        counter.save(null, {
+          success: function(counter) {
+            var $element = $(document.getElementById(name));
+            $element.find('.like-num').text(counter.get('time'));
+          },
+          error: function(counter, error) {
+            console.log('Failed to save Visitor num, with error message: ' + error.message);
+          }
+        });
+      }
+    },
+    error: function(error) {
+      console.log('Error:' + error.code + " " + error.message);
+    }
+  });
+}
+
+
+$(".photo-like").click(function() {
+    if($(this).hasClass("dislike")) {
+        $(this).attr("src", "/images/Photos/like.png").removeClass("dislike").addClass("like");
+        addLikeCount($(this).parent().attr("id"));
+    } else {
+        $(this).attr("src", "/images/Photos/dislike.png").removeClass("like").addClass("dislike");
+        deleteLikeCount($(this).parent().attr("id"));
+    }
+});
+
+$(function() {
+  showLikeTime();
+})</script></body></html>

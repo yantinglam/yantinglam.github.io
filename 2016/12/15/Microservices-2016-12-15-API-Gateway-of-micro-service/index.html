@@ -1,0 +1,237 @@
+<!DOCTYPE html><html lang="zh-cn"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="author" content="Yanting Lam"><meta name="description" content="什么是APIGateway?&amp;emsp;&amp;emsp;APIGateway是客户端与微服务系统之间的中间件，是客户端访问微服务系统的唯一入口。"><meta name="keywords" content="微服务"><title>微服务架构中的API Gateway · Yanting Lam</title><link rel="icon" href="/favicon.ico"><link rel="canonical" href="http://yantinglam.com/2016/12/15/Microservices-2016-12-15-API-Gateway-of-micro-service/"><link rel="alternate" href="/atom.xml" title="Yanting Lam"><link rel="stylesheet" href="/css/style.css"><script type="text/javascript">var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?8e7c7417ad2e322a37d13dc7cdc5454e";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script><script src="https://cdn1.lncld.net/static/js/av-min-1.2.1.js"></script><script type="text/javascript">AV.initialize("h9D4obRhn4aqzazLSG9Kxa2k-gzGzoHsz", "pRL4WjJEgaARQXXRWHLXbBgw")</script></head><body><div id="main"><header><a href="/." class="logo">Yanting Lam</a><ul class="nav"><li class="nav-link"><a href="/" target="_self">首页</a></li><li class="nav-link"><a href="/archives/" target="_self">归档</a></li><li class="nav-link"><a href="/tags/" target="_self">标签</a></li><li class="nav-link"><a href="/photography/" target="_self">摄影集</a></li></ul></header><section id="container"><article class="post"><h1 class="post-title">微服务架构中的API Gateway</h1><p class="post-meta"><span class="post-time">发表于 2016-12-15</span><span id="/2016/12/15/Microservices-2016-12-15-API-Gateway-of-micro-service/" data-flag-title="微服务架构中的API Gateway" class="leancloud-visitors"><span class="leancloud-visitors-text">阅读次数 </span><span class="leancloud-visitors-count"></span></span></p><div id="sidebar" class="post-sidebar"><h3 class="heading">目录</h3><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#什么是API-Gateway"><span class="toc-text">什么是API Gateway?</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#API-Gateway的功能"><span class="toc-text">API Gateway的功能</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#API-Gateway的优点"><span class="toc-text">API Gateway的优点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#API-Gateway的缺点"><span class="toc-text">API Gateway的缺点</span></a></li></ol></div><div class="post-content"><h3 id="什么是API-Gateway"><a href="#什么是API-Gateway" class="headerlink" title="什么是API Gateway?"></a>什么是API Gateway?</h3><p>&emsp;&emsp;API Gateway是客户端与微服务系统之间的中间件，是客户端访问微服务系统的唯一入口。<a id="more"></a>打个比方，将微服务系统比作一个守卫深严的机密图书馆，将客户端比作图书馆的来访人员，API Gateway就好比是图书馆管理员，这个图书馆里的图书只能由管理员来查阅，所以来访人员想要查询任何图书馆内的资料，都要经过管理员。</p>
+<p>&emsp;&emsp;来访人员（<strong>客户端</strong>）要想查询（<strong>访问</strong>）图书馆（<strong>微服务系统</strong>）里的某些资料（<strong>服务</strong>），就要先告诉管理员（<strong>API Gateway</strong>）他想要查询的信息是什么，然后由管理员去翻阅图书馆里的资料，有的可能翻阅一本资料就得到答案，有的可能需要翻阅好几本资料才能得到答案，但这个来访人员不需要知道。最后管理员整理好最终答案后告诉来访人员。</p>
+<p>&emsp;&emsp;在这个过程中，来访人员只需要关注两点：他想要查询的信息是什么以及他得到的最终答案是什么。来访人员不需要知道得到这个信息的查阅过程，这部分是由管理员来负责的。</p>
+<p>&emsp;&emsp;管理员需要懂得多方语言，才能读懂图书馆里各方语言的资料，也就是说API Gateway必须要有转换不同通讯协议的机制，以便与微服务系统中各个使用不同语言工具的服务进行通讯连接。</p>
+<p><img src="/images/Microservices/API-Gateway-of-micro-service/Model-of-API-Gateway.png" width="500" height="500"></p>
+<h3 id="API-Gateway的功能"><a href="#API-Gateway的功能" class="headerlink" title="API Gateway的功能"></a>API Gateway的功能</h3><ul>
+<li>授权机制<p class="li-explanation">&emsp;&emsp;管理员可以决定来访人员是否有资格进行信息查询。</p></li>
+<li>监控机制<p class="li-explanation">&emsp;&emsp;管理员可以知道图书馆里资料的使用情况。</p></li>
+<li>负载均衡<p class="li-explanation">&emsp;&emsp;管理员可以对图书馆里的资料进行分配使用。</p></li>
+<li>缓存<p class="li-explanation">&emsp;&emsp;管理员可以记住那些常被访问的资料内容，以便能快速回答来访人员的问题。</p></li>
+<li>请求分片和管理<p class="li-explanation">&emsp;&emsp;管理员可以将来访人员要查询的信息分好几次来进行查询。</p>
+
+</li>
+</ul>
+<h3 id="API-Gateway的优点"><a href="#API-Gateway的优点" class="headerlink" title="API Gateway的优点"></a>API Gateway的优点</h3><ul>
+<li>封装微服务系统的内部结构</li>
+<li>减少客户端与微服务系统的通讯次数</li>
+<li>使客户端不需要处理不同服务之间不同的通讯协议，简化客户端代码</li>
+</ul>
+<h3 id="API-Gateway的缺点"><a href="#API-Gateway的缺点" class="headerlink" title="API Gateway的缺点"></a>API Gateway的缺点</h3><ul>
+<li>API Gateway本身必须要是一个高可用的组件，所以对它的开发、部署和管理要求较高</li>
+<li>每次新增服务时，也需要更新API Gateway来支持新的服务</li>
+<li>API Gateway的更新方法越简单越好，否则开发者将因为更新API Gateway而要排队</li>
+</ul>
+<p><br><br>参考链接：<br><a href="http://dockone.io/article/482" target="_blank" rel="external">微服务实战（二）：使用API Gateway</a></p>
+</div></article><div class="tags"><a href="/tags/微服务/">微服务</a></div><div class="paginator"><a href="/2016/12/15/Microservices-2016-12-15-IPC-of-micro-service/" class="prev"><i class="iconfont icon-left"></i><span> 上一页</span></a><a href="/2016/12/14/Microservices-2016-12-14-Fundamentals-of-micro-service/" class="next"><span>下一页</span><i class="iconfont icon-right"></i></a></div><section id="comments"><div data-thread-key="http://yantinglam.com/2016/12/15/Microservices-2016-12-15-API-Gateway-of-micro-service/index.html" data-title="微服务架构中的API Gateway" data-url="http://yantinglam.com/2016/12/15/Microservices-2016-12-15-API-Gateway-of-micro-service/index.html" class="ds-thread"></div><script type="text/javascript">var duoshuoQuery = {short_name: "yantinglam" };
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();</script></section></section><footer><div class="social"><a href="mailto:linyantingly@163.com" title="email" class="iconfont icon-email"></a><a href="https://github.com/yantinglam" title="github" class="iconfont icon-github"></a><a href="/atom.xml" title="rss" class="iconfont icon-rss"></a></div><div class="friendly-links"><h6 class="friendly-links-text">友情链接</h6><a href="http://davidleee.com/" class="friendly-links-url">David Lee(IOS工程师)</a></div><div class="copyright"><p class="power">Powered by <a href="https://hexo.io/">Hexo</a> and Theme by <a href="https://github.com/ahonn/hexo-theme-even"> Even</a></p><p class="since">&copy;2017<span class="heart"><i class="iconfont icon-heart"></i></span><span class="author">Yanting Lam</span></p><p class="calculate"><script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次</span></p></div><div id="back2top"><i class="iconfont icon-up"></i></div></footer></div><script src="/js/zepto.min.js"></script><script src="/js/theme.js"></script><script type="text/javascript">function showPostTime(Counter) {
+    var query = new AV.Query(Counter);
+    var entries = [];
+    var $visitors = $(".leancloud-visitors");
+
+    $visitors.each(function () {
+      entries.push( $(this).attr("id").trim() );
+    });
+
+    query.containedIn('url', entries);
+    query.find()
+      .done(function (results) {
+        var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+        $visitors.find(COUNT_CONTAINER_REF).text(0);
+
+        for (var i = 0; i < results.length; i++) {
+          var item = results[i];
+          var url = item.get('url');
+          var time = item.get('time');
+          var element = document.getElementById(url);
+
+          $(element).find(COUNT_CONTAINER_REF).text(time);
+        }
+      })
+      .fail(function (object, error) {
+        console.log("Error: " + error.code + " " + error.message);
+      });
+  }
+
+  function addPostCount(Counter) {
+    var $visitors = $(".leancloud-visitors");
+    var url = $visitors.attr('id').trim();
+    var title = $visitors.attr('data-flag-title').trim();
+    var query = new AV.Query(Counter);
+
+    query.equalTo("url", url);
+    query.find({
+      success: function(results) {
+        if (results.length > 0) {
+          var counter = results[0];
+          counter.fetchWhenSave(true);
+          counter.increment("time");
+          counter.save(null, {
+            success: function(counter) {
+              var $element = $(document.getElementById(url));
+              $element.find('.leancloud-visitors-count').text(counter.get('time'));
+            },
+            error: function(counter, error) {
+              console.log('Failed to save Visitor num, with error message: ' + error.message);
+            }
+          });
+        } else {
+          var newcounter = new Counter();
+          newcounter.set("title", title);
+          newcounter.set("url", url);
+          newcounter.set("time", 1);
+          newcounter.save(null, {
+            success: function(newcounter) {
+              var $element = $(document.getElementById(url));
+              $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+            },
+            error: function(newcounter, error) {
+              console.log('Failed to create');
+            }
+          });
+        }
+      },
+      error: function(error) {
+        console.log('Error:' + error.code + " " + error.message);
+      }
+    });
+  }
+
+  $(function() {
+    var Counter = AV.Object.extend("Counter");
+    if ($('.leancloud-visitors').length == 1) {
+      addPostCount(Counter);
+    } else if ($('.post-link').length > 1) {
+      showPostTime(Counter);
+    }
+  });
+</script><script type="text/javascript">function showLikeTime() {
+  //- var LikeCounter = AV.Object.extend("LikeCounter");
+  var query = new AV.Query("LikeCounter");
+  var entries = [];
+  var $like = $(".photo-meta");
+
+  $like.each(function () {
+    entries.push( $(this).attr("id").trim() );
+  });
+
+  query.find()
+    .done(function (results) {
+      console.log(results);
+      var COUNT_CONTAINER_REF = '.like-num';
+
+      $like.find(COUNT_CONTAINER_REF).text(0);
+
+      for (var i = 0; i < results.length; i++) {
+        var item = results[i];
+        var name = item.get('name');
+        var time = item.get('time');
+        var element = document.getElementById(name);
+
+        $(element).find(COUNT_CONTAINER_REF).text(time);
+      }
+    })
+    .fail(function (object, error) {
+      console.log("Error: " + error.code + " " + error.message);
+    });
+}
+
+function addLikeCount(name) {
+  var LikeCounter = AV.Object.extend("LikeCounter");
+  var query = new AV.Query(LikeCounter);
+
+  query.equalTo("name", name);
+  query.find({
+    success: function(results) {
+      console.log(results);
+      if (results.length > 0) {
+        var counter = results[0];
+        counter.fetchWhenSave(true);
+        counter.increment("time");
+        counter.save(null, {
+          success: function(counter) {
+            var $element = $(document.getElementById(name));
+            $element.find('.like-num').text(counter.get('time'));
+          },
+          error: function(counter, error) {
+            console.log('Failed to save Visitor num, with error message: ' + error.message);
+          }
+        });
+      } else {
+        var newcounter = new LikeCounter();
+        newcounter.set("name", name);
+        newcounter.set("time", 1);
+        newcounter.save(null, {
+          success: function(newcounter) {
+            var $element = $(document.getElementById(name));
+            $element.find('.like-num').text(newcounter.get('time'));
+          },
+          error: function(newcounter, error) {
+            console.log('Failed to create');
+          }
+        });
+      }
+    },
+    error: function(error) {
+      console.log('Error:' + error.code + " " + error.message);
+    }
+  });
+}
+
+function deleteLikeCount(name) {
+  var LikeCounter = AV.Object.extend("LikeCounter");
+  var query = new AV.Query(LikeCounter);
+
+  query.equalTo("name", name);
+  query.find({
+    success: function(results) {
+      console.log(results);
+      if (results.length > 0) {
+        var counter = results[0];
+        counter.fetchWhenSave(true);
+        counter.increment("time", -1);
+        counter.save(null, {
+          success: function(counter) {
+            var $element = $(document.getElementById(name));
+            $element.find('.like-num').text(counter.get('time'));
+          },
+          error: function(counter, error) {
+            console.log('Failed to save Visitor num, with error message: ' + error.message);
+          }
+        });
+      }
+    },
+    error: function(error) {
+      console.log('Error:' + error.code + " " + error.message);
+    }
+  });
+}
+
+
+$(".photo-like").click(function() {
+    if($(this).hasClass("dislike")) {
+        $(this).attr("src", "/images/Photos/like.png").removeClass("dislike").addClass("like");
+        addLikeCount($(this).parent().attr("id"));
+    } else {
+        $(this).attr("src", "/images/Photos/dislike.png").removeClass("like").addClass("dislike");
+        deleteLikeCount($(this).parent().attr("id"));
+    }
+});
+
+$(function() {
+  showLikeTime();
+})</script></body></html>

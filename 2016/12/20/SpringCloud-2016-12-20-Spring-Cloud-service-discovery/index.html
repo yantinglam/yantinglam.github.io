@@ -1,0 +1,291 @@
+<!DOCTYPE html><html lang="zh-cn"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="author" content="Yanting Lam"><meta name="description" content="什么是SpringCloud？&amp;emsp;&amp;emsp;SpringCloud是一个基于SpringBoot实现的云应用开发工具，它为基于JVM的云应用开发中的配置管理、服务发现、断路器、智能路由、微代理、控制总线、全局锁、决策竞选、分布式会话和集群状态管理等操作提供了一种简"><meta name="keywords" content="微服务,Spring Cloud"><title>Spring Cloud - 服务注册与消费 · Yanting Lam</title><link rel="icon" href="/favicon.ico"><link rel="canonical" href="http://yantinglam.com/2016/12/20/SpringCloud-2016-12-20-Spring-Cloud-service-discovery/"><link rel="alternate" href="/atom.xml" title="Yanting Lam"><link rel="stylesheet" href="/css/style.css"><script type="text/javascript">var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?8e7c7417ad2e322a37d13dc7cdc5454e";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script><script src="https://cdn1.lncld.net/static/js/av-min-1.2.1.js"></script><script type="text/javascript">AV.initialize("h9D4obRhn4aqzazLSG9Kxa2k-gzGzoHsz", "pRL4WjJEgaARQXXRWHLXbBgw")</script></head><body><div id="main"><header><a href="/." class="logo">Yanting Lam</a><ul class="nav"><li class="nav-link"><a href="/" target="_self">首页</a></li><li class="nav-link"><a href="/archives/" target="_self">归档</a></li><li class="nav-link"><a href="/tags/" target="_self">标签</a></li><li class="nav-link"><a href="/photography/" target="_self">摄影集</a></li></ul></header><section id="container"><article class="post"><h1 class="post-title">Spring Cloud - 服务注册与消费</h1><p class="post-meta"><span class="post-time">发表于 2016-12-20</span><span id="/2016/12/20/SpringCloud-2016-12-20-Spring-Cloud-service-discovery/" data-flag-title="Spring Cloud - 服务注册与消费" class="leancloud-visitors"><span class="leancloud-visitors-text">阅读次数 </span><span class="leancloud-visitors-count"></span></span></p><div id="sidebar" class="post-sidebar"><h3 class="heading">目录</h3><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#什么是Spring-Cloud？"><span class="toc-text">什么是Spring Cloud？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#服务注册中心"><span class="toc-text">服务注册中心</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#创建服务注册中心"><span class="toc-text">创建服务注册中心</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#注册服务到注册中心"><span class="toc-text">注册服务到注册中心</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#消费服务实例"><span class="toc-text">消费服务实例</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#使用Riboon实现客户端负载均衡的消费者"><span class="toc-text">使用Riboon实现客户端负载均衡的消费者</span></a></li></ol></li></ol></div><div class="post-content"><h3 id="什么是Spring-Cloud？"><a href="#什么是Spring-Cloud？" class="headerlink" title="什么是Spring Cloud？"></a>什么是Spring Cloud？</h3><p>&emsp;&emsp;Spring Cloud是一个基于Spring Boot实现的云应用开发工具，它为基于JVM的云应用开发中的配置管理、服务发现、断路器、智能路由、微代理、控制总线、全局锁、决策竞选、分布式会话和集群状态管理等操作提供了一种简单的开发方式。<br><a id="more"></a><br>&emsp;&emsp;Spring Cloud有众多子项目，如配置管理工具包Spring Cloud Config，可以把配置放在远程服务器上，集中化管理集群配置；又比如Spring Cloud Netfilx，该项目整合了Netflix OSS，可以直接在项目中使用Netflix OSS。想了解更多的Spring Cloud子项目，可以浏览<a href="https://springcloud.cc/" target="_blank" rel="external">https://springcloud.cc/</a> 。</p>
+<h3 id="服务注册中心"><a href="#服务注册中心" class="headerlink" title="服务注册中心"></a>服务注册中心</h3><p>&emsp;&emsp;在之前的文章《<a href="/2016/12/15/Service-discovery/index.html">服务发现机制</a>》中已经知道了服务发现机制对微服务架构的重要性。Spring Cloud框架实现服务发现是使用Eureka模块，是一种客户端发现机制。Netflix用Eureka模块来实现服务发现的服务端与客户端。</p>
+<p>&emsp;&emsp;在Eureka中，服务端是一个“服务注册中心”，服务实例在启动时把自己的元数据诸如主机和端口等信息提供给注册中心，并且通过发送心跳包来维持注册状态。如果心跳包接收超时，实例将会从注册中心中移除。注册中心主要是处理请求的接收者。</p>
+<p>&emsp;&emsp;某个服务实例需要访问其他的服务实例，需要在注册中心上，通过负载均衡机制找到相对应服务的网络位置，然后进行访问。</p>
+<h4 id="创建服务注册中心"><a href="#创建服务注册中心" class="headerlink" title="创建服务注册中心"></a>创建服务注册中心</h4><p>1.创建一个基础Spring Boot工程（在<a href="https://start.spring.io/" target="_blank" rel="external">https://start.spring.io/</a> 中创建下载再导入到IDE中），并在pom.xml引入Eureka Server的依赖。<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-test<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">scope</span>&gt;</span>test<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-eureka-server<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div><div class="line"></div><div class="line"><span class="tag">&lt;<span class="name">dependencyManagement</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-dependencies<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>Brixton.SR5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">type</span>&gt;</span>pom<span class="tag">&lt;/<span class="name">type</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">scope</span>&gt;</span>import<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencyManagement</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>2.在application.properties文件中进行配置。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">server.port=1111</div><div class="line">eureka.client.register-with-eureka=false</div><div class="line">eureka.client.fetch-registry=false</div><div class="line">eureka.client.serviceUrl.defaultZone=http://localhost:$&#123;server.port&#125;/eureka/</div></pre></td></tr></table></figure></p>
+<ul>
+<li>server.port：指定注册中心的访问端口</li>
+<li>eureka.client.register-with-eureka：是否注册到注册中心上，注册中心本身就无需注册了。该配置默认为true</li>
+<li>eureka.client.fetch-registry：该服务是否被获取到，同样注册中心本身无需被获取。该配置默认为true</li>
+<li>eureka.client.serviceUrl.defaultZone：指定服务注册中心的位置</li>
+</ul>
+<p>3.向入口程序添加@EnableEurekaServer注解，开启服务注册中心功能。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@EnableEurekaServer</span></div><div class="line"><span class="meta">@SpringBootApplication</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SpringCloudApplication</span> </span>&#123;</div><div class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</div><div class="line">		<span class="keyword">new</span> SpringApplicationBuilder(SpringCloudApplication.class).web(<span class="keyword">true</span>).run(args);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>这里还有一个@SpringBootApplication注解，此注解等价于@Configuration、@EnableAutoConfiguration以及@ComponentScan的集合，用于配置Spring程序。</p>
+<p>4.启动程序，访问<a href="http://localhost:1111/" target="_blank" rel="external">http://localhost:1111/</a> ，可以看到服务注册中心的管理界面</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-service-discovery/Eureka-Server.png" width="600" height="400"></p>
+<p>&emsp;&emsp;在这个界面上可以看到注册中心的状态以及服务的注册信息，通过“Instances currently registered width Eureka”这一栏可以知道现在还没有任何服务实例注册在上面。</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-service-discovery/None-instances-registered.png" width="800" height="500"></p>
+<h3 id="注册服务到注册中心"><a href="#注册服务到注册中心" class="headerlink" title="注册服务到注册中心"></a>注册服务到注册中心</h3><p>&emsp;&emsp;现在尝试创建一个简单功能的客户端服务程序，例如提供计算简单a+b功能的服务程序，并把该服务注册到注册中心上。</p>
+<p>1.创建一个简单的Spring Boot工程，并在pom.xml引入Eureka客户端依赖。<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-test<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">scope</span>&gt;</span>test<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-eureka<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div><div class="line"></div><div class="line"><span class="tag">&lt;<span class="name">dependencyManagement</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-dependencies<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>Brixton.SR5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">type</span>&gt;</span>pom<span class="tag">&lt;/<span class="name">type</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">scope</span>&gt;</span>import<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencyManagement</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>2.在application.properties文件中进行配置。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">spring.application.name=compute-service</div><div class="line">server.port=2222</div><div class="line">eureka.client.serviceUrl.defaultZone = http://localhost:1111/eureka/</div></pre></td></tr></table></figure></p>
+<ul>
+<li>spring.application.name：配置服务实例的名字，在后续的调用中，可以直接通过该名字对此服务进行访问</li>
+<li>server.port：指定服务实例的访问端口</li>
+<li>eureka.client.serviceUrl.defaultZone：指定要注册到上面的服务注册中心的位置</li>
+</ul>
+<p>3.向入口程序添加@EnableDiscoveryClient注解，激活DiscoveryClient的实现，这样才能注册到注册中心上面。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@EnableDiscoveryClient</span> <span class="comment">//该注释能激活DiscoveryClient的实现，实现controller中的信息输出</span></div><div class="line"><span class="meta">@SpringBootApplication</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ComputeServiceApplication</span> </span>&#123;</div><div class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</div><div class="line">		<span class="keyword">new</span> SpringApplicationBuilder(ComputeServiceApplication.class).web(<span class="keyword">true</span>).run(args);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>4.编写处理请求程序<br>新建一个类，如ComputeController.java，一般会放在web目录下。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@RestController</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ComputeController</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Logger logger = Logger.getLogger(getClass());</div><div class="line"></div><div class="line">    <span class="meta">@Autowired</span></div><div class="line">    <span class="keyword">private</span> DiscoveryClient client;</div><div class="line"></div><div class="line">    <span class="meta">@RequestMapping</span>(value = <span class="string">"/add"</span>, method = RequestMethod.GET)</div><div class="line">    <span class="function"><span class="keyword">public</span> Integer <span class="title">add</span><span class="params">(@RequestParam Integer a, @RequestParam Integer b)</span> </span>&#123;</div><div class="line">        Integer r = a + b;</div><div class="line"></div><div class="line">        ServiceInstance instance = client.getLocalServiceInstance();</div><div class="line">        logger.info(<span class="string">"a: "</span> + a + <span class="string">" b: "</span> + b);</div><div class="line">        logger.info(<span class="string">"/add, host: "</span> + instance.getHost() + <span class="string">", service_id: "</span> + instance.getServiceId() + <span class="string">", result: "</span> + r);</div><div class="line"></div><div class="line">        <span class="keyword">return</span> r;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>&emsp;&emsp;这里需要用到三个注解：@RestController、@RequestMapping以及@Autowired。</p>
+<ul>
+<li>@RestController注解被称为构造型注解，表明该类是一个支持REST的控制器。该注解告诉Spring以字符串的形式渲染结果，并直接返回给调用者</li>
+<li>@RequestMapping注解提供路由信息，在这个例子中，它告诉Spring将来自”/add”路径的HTTP请求都映射到add()方法，请求使用GET方法</li>
+<li>@Autowired注解可以对类成员变量、方法及构造函数进行标注，完成自动装配的工作，以此来消除get、set方法</li>
+</ul>
+<p>5.启动程序<br>&emsp;&emsp;访问<a href="http://localhost:2222/add?a=1&amp;b=2" target="_blank" rel="external">http://localhost:2222/add?a=1&amp;b=2</a> ，可以得到结果3，说明成功访问到该服务。此时刷新<a href="http://localhost:1111/" target="_blank" rel="external">http://localhost:1111/</a> ,可以看到该服务已经注册到了注册中心上：</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-service-discovery/Compute-service-registered.png" width="800" height="500"></p>
+<h3 id="消费服务实例"><a href="#消费服务实例" class="headerlink" title="消费服务实例"></a>消费服务实例</h3><p>&emsp;&emsp;现在有了注册中心，也有了一个能提供服务的实例注册到了注册中心上面，那么如何来消费这个服务实例呢？接下来再新建一个基础的Spring Boot工程，用这个工程来消费上面创建的compute-service服务。</p>
+<p>&emsp;&emsp;在编写这个消费程序之前，要知道Netflix里的这个Eureka模块是服务发现机制里的客户端发现模式，而客户端发现模式在请求一个服务时，会到服务注册中心中查询，然后使用负载均衡算法从多个服务实例中选择一个，再发出请求。这部分内容可以回顾《<a href="/2016/12/15/Service-discovery/index.html">服务发现机制</a>》。所以负载均衡在这里也是一个很重要的知识点。</p>
+<p>&emsp;&emsp;在Netflix中，使用Ribbon模块来实现负载均衡。Ribbon是一个基于HTTP和TCP客户端的负载均衡，可以通过客户端中配置的ribbonServerList服务端列表去轮询访问以达到负载均衡的作用。</p>
+<p>&emsp;&emsp;当Ribbon与Eureka配合使用时，ribbonSeverList会被DiscoveryEnableNIWSSeverList重写，这时就会变成从Eureka注册中心中获取服务端列表，同时也会用NIWSDiscoveryPing来取代IPing，它将职责委托给Eureka来确定服务端是否已经启动。</p>
+<h4 id="使用Riboon实现客户端负载均衡的消费者"><a href="#使用Riboon实现客户端负载均衡的消费者" class="headerlink" title="使用Riboon实现客户端负载均衡的消费者"></a>使用Riboon实现客户端负载均衡的消费者</h4><p>1.在刚刚新建的基础Spring Boot工程的pom.xml引入所需的Eureka客户端和Ribbon依赖。<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-ribbon<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-eureka<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-test<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">scope</span>&gt;</span>test<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div><div class="line"></div><div class="line"><span class="tag">&lt;<span class="name">dependencyManagement</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-dependencies<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>Brixton.SR5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">type</span>&gt;</span>pom<span class="tag">&lt;/<span class="name">type</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">scope</span>&gt;</span>import<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencyManagement</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>2.在application.properties文件中进行配置。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">spring.application.name=ribbon-consumer</div><div class="line">server.port=3333</div><div class="line">eureka.client.serviceUrl.defaultZone=http://localhost:1111/eureka/</div></pre></td></tr></table></figure></p>
+<ul>
+<li>spring.application.name：配置服务实例的名字，在后续的调用中，可以直接通过该名字对此服务进行访问</li>
+<li>server.port：指定服务实例的访问端口</li>
+<li>eureka.client.serviceUrl.defaultZone：指定要注册到上面的服务注册中心的位置</li>
+</ul>
+<p>消费服务程序也需要注册到注册中心上，因为只有注册到上面，才能通过注册中心查找其他服务的位置进行消费。</p>
+<p>3.向入口程序添加@EnableDiscoveryClient</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@SpringBootApplication</span></div><div class="line"><span class="meta">@EnableDiscoveryClient</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RibbonApplication</span> </span>&#123;</div><div class="line"></div><div class="line">	<span class="meta">@Bean</span></div><div class="line">	<span class="meta">@LoadBalanced</span></div><div class="line">	<span class="function">RestTemplate <span class="title">restTemplate</span><span class="params">()</span> </span>&#123;</div><div class="line">		<span class="keyword">return</span> <span class="keyword">new</span> RestTemplate();</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</div><div class="line">		SpringApplication.run(RibbonApplication.class, args);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>@EnableDiscoveryClient注解激活DiscoveryClient实现，成为服务客户端，注册到服务注册中心上面</li>
+<li>@LoadBalanced注解开启负载均衡的能力</li>
+<li>@Bean注解声明一个Bean，是xml中的<bean>元素的直接模拟</bean></li>
+<li>RestTemplate类提供HTTP的各类方法，如GET、POST、HEAD、PUT、DELETE等，用于访问REST接口</li>
+</ul>
+<p>4.创建ComputeService类来消费compute-service服务<br>新建一个类，如ComputeService.java，一般放在web目录下。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@Service</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ComputeService</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="meta">@Autowired</span></div><div class="line">    RestTemplate restTemplate;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">addService</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> restTemplate.getForEntity(<span class="string">"http://COMPUTE-SERVICE/add?a=10&amp;b=20"</span>, String.class).getBody();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>@Service注解用于标注业务组件</li>
+<li>ResponseEntity<t> getForEntity(String url, Class<t> responseType)方法的作用是，向url发起GET请求，返回的结果被转换成responseType类型并保存到ResponseEntity对象里。在此例子中，就是对<a href="http://COMPUTE-SERVICE/add?a=10&amp;b=20" target="_blank" rel="external">http://COMPUTE-SERVICE/add?a=10&amp;b=20</a> 这个URL发起GET请求，此URL就是指向compute-service服务的，返回的结果被转换成String类型保存到了ResponseEntity对象中</t></t></li>
+</ul>
+<p>5.编写请求处理程序<br>新建一个类，如ConsumerController.java，一般放在web目录下。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@RestController</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ConsumerController</span> </span>&#123;</div><div class="line">    <span class="meta">@Autowired</span></div><div class="line">    <span class="keyword">private</span> ComputeService computeService;</div><div class="line"></div><div class="line">    <span class="meta">@RequestMapping</span>(value=<span class="string">"/add"</span>, method= RequestMethod.GET)</div><div class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">add</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> computeService.addService();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>6.启动程序<br>此时在注册中心上可以看到消费服务也注册到上面了，此时运行<a href="http://localhost:3333/add" target="_blank" rel="external">http://localhost:3333/add</a> ,可以看到通过compute-service计算，返回来的结果30。</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-service-discovery/Ribbon-registered.png" width="800" height="500"></p>
+<p>&emsp;&emsp;因为现在只启动了一个compute-service服务实例，所以看不出负载均衡的效果，可以将compute-service项目打包成jar包，然后通过命令行启动两个或多个compute-service服务实例。</p>
+<p>&emsp;&emsp;注意：打包的时候，每个compute-service服务的server.port端口要设置成不一样。</p>
+<p>&emsp;&emsp;IDEA打包jar可以参考此链接：<a href="http://blog.csdn.net/tolcf/article/details/50676171" target="_blank" rel="external">http://blog.csdn.net/tolcf/article/details/50676171</a></p>
+<p>&emsp;&emsp;打包成功后，依次启动注册中心服务、compute-service服务以及消费服务，此时在注册中心管理页面中看到有两个使用不同端口的compute-service服务注册到了上面：</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-service-discovery/Two-compute-service.png" wdith="800" height="500"></p>
+<p>&emsp;&emsp;此时访问两次<a href="http://localhost:3333/add" target="_blank" rel="external">http://localhost:3333/add</a> ，会看到两个compute-service都增加了一条log信息，说明两个服务都被访问了一次</p>
+<p>端口为2222的服务实例：</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-service-discovery/Compute-service1.png" width="800" height="500"></p>
+<p>端口为2223的服务实例：<br><img src="/images/SpringCloud/Spring-Cloud-service-discovery/Compute-service2.png" width="800" height="500"></p>
+<p><br><br>参考链接：<br><a href="http://blog.didispace.com/springcloud1/" target="_blank" rel="external">Spring Cloud构建微服务架构（一）服务注册与发现</a><br><a href="http://blog.didispace.com/springcloud2/" target="_blank" rel="external">Spring Cloud构建微服务架构（二）服务消费者</a></p>
+</div></article><div class="tags"><a href="/tags/微服务/">微服务</a><a href="/tags/Spring-Cloud/">Spring Cloud</a></div><div class="paginator"><a href="/2016/12/21/Seven-years-is-a-life-2016-12-21-Compound-interest/" class="prev"><i class="iconfont icon-left"></i><span> 上一页</span></a><a href="/2016/12/16/Microservices-2016-12-16-Single-mode-app-to-micro-service/" class="next"><span>下一页</span><i class="iconfont icon-right"></i></a></div><section id="comments"><div data-thread-key="http://yantinglam.com/2016/12/20/SpringCloud-2016-12-20-Spring-Cloud-service-discovery/index.html" data-title="Spring Cloud - 服务注册与消费" data-url="http://yantinglam.com/2016/12/20/SpringCloud-2016-12-20-Spring-Cloud-service-discovery/index.html" class="ds-thread"></div><script type="text/javascript">var duoshuoQuery = {short_name: "yantinglam" };
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();</script></section></section><footer><div class="social"><a href="mailto:linyantingly@163.com" title="email" class="iconfont icon-email"></a><a href="https://github.com/yantinglam" title="github" class="iconfont icon-github"></a><a href="/atom.xml" title="rss" class="iconfont icon-rss"></a></div><div class="friendly-links"><h6 class="friendly-links-text">友情链接</h6><a href="http://davidleee.com/" class="friendly-links-url">David Lee(IOS工程师)</a></div><div class="copyright"><p class="power">Powered by <a href="https://hexo.io/">Hexo</a> and Theme by <a href="https://github.com/ahonn/hexo-theme-even"> Even</a></p><p class="since">&copy;2017<span class="heart"><i class="iconfont icon-heart"></i></span><span class="author">Yanting Lam</span></p><p class="calculate"><script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次</span></p></div><div id="back2top"><i class="iconfont icon-up"></i></div></footer></div><script src="/js/zepto.min.js"></script><script src="/js/theme.js"></script><script type="text/javascript">function showPostTime(Counter) {
+    var query = new AV.Query(Counter);
+    var entries = [];
+    var $visitors = $(".leancloud-visitors");
+
+    $visitors.each(function () {
+      entries.push( $(this).attr("id").trim() );
+    });
+
+    query.containedIn('url', entries);
+    query.find()
+      .done(function (results) {
+        var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+        $visitors.find(COUNT_CONTAINER_REF).text(0);
+
+        for (var i = 0; i < results.length; i++) {
+          var item = results[i];
+          var url = item.get('url');
+          var time = item.get('time');
+          var element = document.getElementById(url);
+
+          $(element).find(COUNT_CONTAINER_REF).text(time);
+        }
+      })
+      .fail(function (object, error) {
+        console.log("Error: " + error.code + " " + error.message);
+      });
+  }
+
+  function addPostCount(Counter) {
+    var $visitors = $(".leancloud-visitors");
+    var url = $visitors.attr('id').trim();
+    var title = $visitors.attr('data-flag-title').trim();
+    var query = new AV.Query(Counter);
+
+    query.equalTo("url", url);
+    query.find({
+      success: function(results) {
+        if (results.length > 0) {
+          var counter = results[0];
+          counter.fetchWhenSave(true);
+          counter.increment("time");
+          counter.save(null, {
+            success: function(counter) {
+              var $element = $(document.getElementById(url));
+              $element.find('.leancloud-visitors-count').text(counter.get('time'));
+            },
+            error: function(counter, error) {
+              console.log('Failed to save Visitor num, with error message: ' + error.message);
+            }
+          });
+        } else {
+          var newcounter = new Counter();
+          newcounter.set("title", title);
+          newcounter.set("url", url);
+          newcounter.set("time", 1);
+          newcounter.save(null, {
+            success: function(newcounter) {
+              var $element = $(document.getElementById(url));
+              $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+            },
+            error: function(newcounter, error) {
+              console.log('Failed to create');
+            }
+          });
+        }
+      },
+      error: function(error) {
+        console.log('Error:' + error.code + " " + error.message);
+      }
+    });
+  }
+
+  $(function() {
+    var Counter = AV.Object.extend("Counter");
+    if ($('.leancloud-visitors').length == 1) {
+      addPostCount(Counter);
+    } else if ($('.post-link').length > 1) {
+      showPostTime(Counter);
+    }
+  });
+</script><script type="text/javascript">function showLikeTime() {
+  //- var LikeCounter = AV.Object.extend("LikeCounter");
+  var query = new AV.Query("LikeCounter");
+  var entries = [];
+  var $like = $(".photo-meta");
+
+  $like.each(function () {
+    entries.push( $(this).attr("id").trim() );
+  });
+
+  query.find()
+    .done(function (results) {
+      console.log(results);
+      var COUNT_CONTAINER_REF = '.like-num';
+
+      $like.find(COUNT_CONTAINER_REF).text(0);
+
+      for (var i = 0; i < results.length; i++) {
+        var item = results[i];
+        var name = item.get('name');
+        var time = item.get('time');
+        var element = document.getElementById(name);
+
+        $(element).find(COUNT_CONTAINER_REF).text(time);
+      }
+    })
+    .fail(function (object, error) {
+      console.log("Error: " + error.code + " " + error.message);
+    });
+}
+
+function addLikeCount(name) {
+  var LikeCounter = AV.Object.extend("LikeCounter");
+  var query = new AV.Query(LikeCounter);
+
+  query.equalTo("name", name);
+  query.find({
+    success: function(results) {
+      console.log(results);
+      if (results.length > 0) {
+        var counter = results[0];
+        counter.fetchWhenSave(true);
+        counter.increment("time");
+        counter.save(null, {
+          success: function(counter) {
+            var $element = $(document.getElementById(name));
+            $element.find('.like-num').text(counter.get('time'));
+          },
+          error: function(counter, error) {
+            console.log('Failed to save Visitor num, with error message: ' + error.message);
+          }
+        });
+      } else {
+        var newcounter = new LikeCounter();
+        newcounter.set("name", name);
+        newcounter.set("time", 1);
+        newcounter.save(null, {
+          success: function(newcounter) {
+            var $element = $(document.getElementById(name));
+            $element.find('.like-num').text(newcounter.get('time'));
+          },
+          error: function(newcounter, error) {
+            console.log('Failed to create');
+          }
+        });
+      }
+    },
+    error: function(error) {
+      console.log('Error:' + error.code + " " + error.message);
+    }
+  });
+}
+
+function deleteLikeCount(name) {
+  var LikeCounter = AV.Object.extend("LikeCounter");
+  var query = new AV.Query(LikeCounter);
+
+  query.equalTo("name", name);
+  query.find({
+    success: function(results) {
+      console.log(results);
+      if (results.length > 0) {
+        var counter = results[0];
+        counter.fetchWhenSave(true);
+        counter.increment("time", -1);
+        counter.save(null, {
+          success: function(counter) {
+            var $element = $(document.getElementById(name));
+            $element.find('.like-num').text(counter.get('time'));
+          },
+          error: function(counter, error) {
+            console.log('Failed to save Visitor num, with error message: ' + error.message);
+          }
+        });
+      }
+    },
+    error: function(error) {
+      console.log('Error:' + error.code + " " + error.message);
+    }
+  });
+}
+
+
+$(".photo-like").click(function() {
+    if($(this).hasClass("dislike")) {
+        $(this).attr("src", "/images/Photos/like.png").removeClass("dislike").addClass("like");
+        addLikeCount($(this).parent().attr("id"));
+    } else {
+        $(this).attr("src", "/images/Photos/dislike.png").removeClass("like").addClass("dislike");
+        deleteLikeCount($(this).parent().attr("id"));
+    }
+});
+
+$(function() {
+  showLikeTime();
+})</script></body></html>

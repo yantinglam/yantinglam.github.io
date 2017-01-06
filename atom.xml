@@ -1,0 +1,986 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Yanting Lam</title>
+  
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="http://yantinglam.com/"/>
+  <updated>2017-01-05T07:03:49.000Z</updated>
+  <id>http://yantinglam.com/</id>
+  
+  <author>
+    <name>Yanting Lam</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Spring Cloud - Feign</title>
+    <link href="http://yantinglam.com/2016/12/28/SpringCloud-2016-12-28-Spring-Cloud-Feign/"/>
+    <id>http://yantinglam.com/2016/12/28/SpringCloud-2016-12-28-Spring-Cloud-Feign/</id>
+    <published>2016-12-28T09:28:33.000Z</published>
+    <updated>2017-01-05T07:03:49.000Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="什么是Feign？"><a href="#什么是Feign？" class="headerlink" title="什么是Feign？"></a>什么是Feign？</h3><p>&emsp;&emsp;Feign是一个声明式的Web Service客户端，它旨在通过最少的资源和代码来实现和HTTP API的连接，使得编写Web Service客户端变得更加简单。它的使用方法是定义一个接口，然后在上面添加注解（支持JAX-RS标准的注解)。Feign支持可插拔式的编码器和解码器。<br><a id="more"></a><br>&emsp;&emsp;Spring Cloud对Feign进行了封装，使其支持Spring MVC标准注解和HttpMessageConverters，还整合了Ribbon和Eureka来提供负载均衡的HTTP客户端实现。</p>
+<h3 id="创建一个Spring-Cloud-Feign工程"><a href="#创建一个Spring-Cloud-Feign工程" class="headerlink" title="创建一个Spring Cloud Feign工程"></a>创建一个Spring Cloud Feign工程</h3><p>1.先新建一个基础的Spring Boot工程，并通过配置pom.xml文件引入Feign和Eureka模块相关依赖。<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-feign<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-eureka<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-test<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">scope</span>&gt;</span>test<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div><div class="line"></div><div class="line"><span class="tag">&lt;<span class="name">dependencyManagement</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-dependencies<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>Brixton.SR5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">type</span>&gt;</span>pom<span class="tag">&lt;/<span class="name">type</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">scope</span>&gt;</span>import<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencyManagement</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>2.在application.properties文件中进行配置。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">spring.application.name=feign-consumer</div><div class="line">server.port=4444</div><div class="line">eureka.client.serviceUrl.defaultZone=http://localhost:1111/eureka/</div></pre></td></tr></table></figure></p>
+<ul>
+<li>spring.application.name：配置服务实例的名字，在后续的调用中，可以直接通过该名字对此服务进行访问</li>
+<li>server.port：指定服务实例的访问端口</li>
+<li>eureka.client.serviceUrl.defaultZone：指定要注册到上面的服务注册中心的位置</li>
+</ul>
+<p>3.向入口程序添加@EnableDiscoveryClient以及@EnableFeignClients注解</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@SpringBootApplication</span></div><div class="line"><span class="meta">@EnableDiscoveryClient</span></div><div class="line"><span class="meta">@EnableFeignClients</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FeignApplication</span> </span>&#123;</div><div class="line"></div><div class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</div><div class="line">		SpringApplication.run(FeignApplication.class, args);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>@EnableDiscoveryClient注解开启DiscoveryClient功能</li>
+<li>@EnableFeignClients注解开启Feign功能</li>
+</ul>
+<p>3.定义compute-service服务的接口<br>新建一个接口，如ComputeClient.java</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@FeignClient</span>(value = <span class="string">"compute-service"</span>)  </div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">ComputeClient</span> </span>&#123;</div><div class="line">    <span class="meta">@RequestMapping</span>(method = RequestMethod.GET, value = <span class="string">"/add"</span>)</div><div class="line">    <span class="function">Integer <span class="title">add</span><span class="params">(@RequestParam(value = <span class="string">"a"</span>)</span> Integer a, @<span class="title">RequestParam</span><span class="params">(value = <span class="string">"b"</span>)</span> Integer b)</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>@FeignClient注解绑定该接口对应compute-service服务</li>
+<li>通过Spring MVC注解来配置compute-service服务下的具体实现。如@RequestMapping注解处理路由信息，@RequestParam注解绑定请求参数</li>
+</ul>
+<p>4.编写处理请求程序<br>新建一个类，如ConsumerController.java，一般放在web目录下。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@RestController</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ConsumerController</span> </span>&#123;</div><div class="line">    <span class="meta">@Autowired</span></div><div class="line">    ComputeClient computeClient; </div><div class="line"></div><div class="line">    <span class="meta">@RequestMapping</span>(value = <span class="string">"/add"</span>, method = RequestMethod.GET)</div><div class="line">    <span class="function"><span class="keyword">public</span> Integer <span class="title">add</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> computeClient.add(<span class="number">10</span>, <span class="number">20</span>);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>因为ComputeClient接口绑定了compute-service服务，所以调用ComputeClient的add方法就相当于调用compute-service的add方法。</li>
+</ul>
+<p>5.依次启动注册中心服务，compute-service服务（参考<a href="/2016/12/20/Spring-Cloud-service-discovery/index.html">Spring Cloud - 服务注册与消费</a>）以及此Feign客户端服务，在注册中心管理页面上看到已注册到上面的服务，此时访问两次<a href="http://localhost:4444/add" target="_blank" rel="external">http://localhost:4444/add</a> ，能得到通过compute-servcie服务计算出的结果，而且看到两个compute-service服务实例都有被访问到。</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-Feign/Feign-registered.png" width="800" heigth="500"></p>
+<p>端口为2222的服务实例：</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-Feign/Compute-service1.png" width="800" height="500"></p>
+<p>端口为2223的服务实例：<br><img src="/images/SpringCloud/Spring-Cloud-Feign/Compute-service2.png" width="800" height="500"></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;什么是Feign？&quot;&gt;&lt;a href=&quot;#什么是Feign？&quot; class=&quot;headerlink&quot; title=&quot;什么是Feign？&quot;&gt;&lt;/a&gt;什么是Feign？&lt;/h3&gt;&lt;p&gt;&amp;emsp;&amp;emsp;Feign是一个声明式的Web Service客户端，它旨在通过最少的资源和代码来实现和HTTP API的连接，使得编写Web Service客户端变得更加简单。它的使用方法是定义一个接口，然后在上面添加注解（支持JAX-RS标准的注解)。Feign支持可插拔式的编码器和解码器。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="技术" scheme="http://yantinglam.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="微服务" scheme="http://yantinglam.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+      <category term="Spring Cloud" scheme="http://yantinglam.com/tags/Spring-Cloud/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Spring-Cloud - 断路器</title>
+    <link href="http://yantinglam.com/2016/12/23/SpringCloud-2016-12-23-Spring-Cloud-Hystrix/"/>
+    <id>http://yantinglam.com/2016/12/23/SpringCloud-2016-12-23-Spring-Cloud-Hystrix/</id>
+    <published>2016-12-23T05:57:32.000Z</published>
+    <updated>2017-01-04T03:21:22.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>&emsp;&emsp;在微服务架构中，是将一个个业务功能拆分成一个个小的服务，各个服务之间通过IPC机制进行通信，因此有可能因为网络故障或依赖服务自身问题出现延迟或调用故障。若此时调用方不断增加请求，最后就会出现因等待依赖服务响应而造成任务积压，最终导致自身服务的瘫痪。为了解决这个问题，Spring Cloud给出了断路器模式。<br><a id="more"></a></p>
+<h3 id="什么是断路器？"><a href="#什么是断路器？" class="headerlink" title="什么是断路器？"></a>什么是断路器？</h3><p>&emsp;&emsp;断路器的概念原本是应用在电路上的，断路器是一种开关装置，用于保护线路过载。当电路中有电器发生短路，断路器能及时切断故障电路，避免发生过载、过热甚至起火等严重后果。</p>
+<p>&emsp;&emsp;在微服务架构中，断路器也起到了一个类似这样的作用。当某个服务发生故障时，通过断路器的故障监控，向调用方返回一个设定的错误响应，以防止调用方长期等待。这样可以避免线程因服务故障而被长期占用不能释放，从而避免故障蔓延。</p>
+<h3 id="Spring-Cloud的断路器实现"><a href="#Spring-Cloud的断路器实现" class="headerlink" title="Spring Cloud的断路器实现"></a>Spring Cloud的断路器实现</h3><p>&emsp;&emsp;在Spring Cloud中，使用Hystrix来实现断路器的功能。Hystrix旨在通过控制那些访问远程系统、服务和第三方库的节点，从而对延迟和故障提供更强大的容错能力。</p>
+<h3 id="Hystrix的实现"><a href="#Hystrix的实现" class="headerlink" title="Hystrix的实现"></a>Hystrix的实现</h3><p>&emsp;&emsp;这里需要用到前面<a href="/2016/12/20/Spring-Cloud-service-discovery/index.html">服务注册与消费</a>的例子。</p>
+<p>&emsp;&emsp;依次启动注册中心服务，compute-service服务以及Ribbon客户端服务，并访问<a href="http://localhost:3333/add" target="_blank" rel="external">http://localhost:3333/add</a> ,此时可以看到页面返回计算结果30。现在通过关闭compute-service来模拟服务出现故障的情况，关闭compute-service服务之后，再次访问<a href="http://localhost:3333/add" target="_blank" rel="external">http://localhost:3333/add</a> ，会得到如下图所页的错误提示：</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-Hystrix/Compute-service-error.png" width="500" height="300"></p>
+<p>&emsp;&emsp;接下来修改Ribbon客户端来增加Hystrix功能。<br>1.加入Hystrix依赖。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-hystrix<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div></pre></td></tr></table></figure>
+<p>2.向主入口程序添加@EnableCircuitBreaker注解开启断路器功能。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@SpringBootApplication</span></div><div class="line"><span class="meta">@EnableDiscoveryClient</span></div><div class="line"><span class="meta">@EnableCircuitBreakeraker</span> <span class="comment">//开启Hystrix</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RibbonApplication</span> </span>&#123;</div><div class="line"></div><div class="line">	<span class="meta">@Bean</span></div><div class="line">	<span class="meta">@LoadBalanced</span></div><div class="line">	<span class="function">RestTemplate <span class="title">restTemplate</span><span class="params">()</span> </span>&#123;</div><div class="line">		<span class="keyword">return</span> <span class="keyword">new</span> RestTemplate();</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</div><div class="line">		SpringApplication.run(RibbonApplication.class, args);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>3.在服务消费方法上添加@HystrixCommand注解来指定失败回调方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@Service</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ComputeService</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="meta">@Autowired</span></div><div class="line">    RestTemplate restTemplate;</div><div class="line"></div><div class="line">    <span class="meta">@HystrixCommand</span>(fallbackMethod = <span class="string">"addServiceFallback"</span>)</div><div class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">addService</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> restTemplate.getForEntity(<span class="string">"http://COMPUTE-SERVICE/add?a=10&amp;b=20"</span>, String.class).getBody();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">addServiceFallback</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> <span class="string">"error"</span>;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>此例子中指定失败回调方法为addServiceFallback()，该方法返回字符串”error” </li>
+</ul>
+<p>4.重启Ribbon服务，再次访问<a href="http://localhost:4444/add" target="_blank" rel="external">http://localhost:4444/add</a> ，此时得到返回的错误字符串”error”。<br><img src="/images/SpringCloud/Spring-Cloud-Hystrix/Compute-service-errorFallback.png" width="500" height="300"></p>
+<p><br><br>参考链接：<br><a href="http://blog.didispace.com/springcloud3/" target="_blank" rel="external">Spring Cloud构建微服务架构（三）断路器</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;&amp;emsp;&amp;emsp;在微服务架构中，是将一个个业务功能拆分成一个个小的服务，各个服务之间通过IPC机制进行通信，因此有可能因为网络故障或依赖服务自身问题出现延迟或调用故障。若此时调用方不断增加请求，最后就会出现因等待依赖服务响应而造成任务积压，最终导致自身服务的瘫痪。为了解决这个问题，Spring Cloud给出了断路器模式。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="技术" scheme="http://yantinglam.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="微服务" scheme="http://yantinglam.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+      <category term="Spring Cloud" scheme="http://yantinglam.com/tags/Spring-Cloud/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>人生最重要的概念：复利</title>
+    <link href="http://yantinglam.com/2016/12/21/Seven-years-is-a-life-2016-12-21-Compound-interest/"/>
+    <id>http://yantinglam.com/2016/12/21/Seven-years-is-a-life-2016-12-21-Compound-interest/</id>
+    <published>2016-12-21T02:23:17.000Z</published>
+    <updated>2016-12-21T02:53:32.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>&emsp;&emsp;首先来看个例子：A找B借一只鸡，但B只有一只鸡，而且家里的娃天天等着鸡下蛋吃。B想到自己还有10个贝壳，在市场上可以换到一只鸡，于是B好心地将10个贝壳借给了A。A拿着10个贝壳到市场上换了一只鸡，鸡生蛋，蛋生鸡。过了一段时间，想起当初借B的10个贝壳，于是抱着一只刚出生的鸡到市场上换了10个贝壳拿去还给B。B说：“嗯？你应该至少还我20个贝壳吧？”这时个A愤怒了：“你怎么可以这么无耻！你明明借给我10个贝壳，那些贝壳不借给我，放在那里也是放着，难道它们会自动变成二十个？我的那些鸡是我辛辛苦苦养出来的，你什么都没干，就多要10个贝壳？你太坏了！”。<br><a id="more"></a><br>&emsp;&emsp;在这里，A之所以愤怒，是因为A没考虑到事实上B也可以拿着这10个贝壳自己去市场上换一只鸡，然后同样可以鸡生蛋，蛋生鸡，然后换回来更多的贝壳。在这件事里，虽然贝壳看起来是死的，放在那里也不会“自动”生成新贝壳，但这并不意味着说那些贝壳如果不被A借走的话，就一定永远只是放在那里，B也是可以用同样的方法“变出”更多的贝壳。</p>
+<p>&emsp;&emsp;从这个例子中可以看出“复利”其实不是一种什么霸道行为，而是一种正常的现象，因为这种复利现象其中其实包含了一种“机会成本”。10个贝壳能拿来做什么投资，换回多少价值的东西，这就使得看似死的贝壳在各种活动中有了“流动”的活性，从而使它的价值变得不一样。</p>
+<p>&emsp;&emsp;之前在得到音频里听到的一期“买房买车最好贷款买，并且付的首期越少越好”，这其中的道理和上面的例子也是一样的，因为买房买车的金额都相对比较大，如果手上有20万全款买了一辆车，那么这20万仅仅换来了一辆车，但是如果贷款10万，拿剩下的10万去做投资，如果贷款利息是4%的话，只要拿10万去投资并且拿到高于4%的回报率，那原本这20万不仅仅换来了一辆车，还有机会增加额外的收入，这就是机会成本的一个体现。当然像信用卡账单这些小金额的，有手续费的分期付款是不划算的，因为金额太小，很难拿去做投资赚高回报，反而要亏了利息，如果是免手续费的就可以好好利用。</p>
+<p>&emsp;&emsp;满足复利模式的增长曲线都是呈指数型增长的，如下图：</p>
+<p><img src="/images/Seven-years-is-a-life/Compound-interest.png" width="500" height="300"></p>
+<p>&emsp;&emsp;这样的复利曲线都有一个特征，就是到达一个临界点之后，曲线的增长速度会猛增，往后的收益很快就可以弥补之前的付出。想要看到复利的效果，就必须足够长的时间，而且越往后效果越显著。</p>
+<p>&emsp;&emsp;知识的积累过程也符合复利曲线，知识不断的积累，积累得足够多之后，在许多年后的某一天，这些知识会变现的，而它一旦变现，很可能瞬间就抵消以往的所有挫折。所以要不断学习，尽管现在感受不到这些学习带来的收益，但还是要坚持，继续不断的学习、积累，然后耐心的等待这些知识变现的那一天，而且相信这些不可逆的改变会带来不可逆的变化。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;&amp;emsp;&amp;emsp;首先来看个例子：A找B借一只鸡，但B只有一只鸡，而且家里的娃天天等着鸡下蛋吃。B想到自己还有10个贝壳，在市场上可以换到一只鸡，于是B好心地将10个贝壳借给了A。A拿着10个贝壳到市场上换了一只鸡，鸡生蛋，蛋生鸡。过了一段时间，想起当初借B的10个贝壳，于是抱着一只刚出生的鸡到市场上换了10个贝壳拿去还给B。B说：“嗯？你应该至少还我20个贝壳吧？”这时个A愤怒了：“你怎么可以这么无耻！你明明借给我10个贝壳，那些贝壳不借给我，放在那里也是放着，难道它们会自动变成二十个？我的那些鸡是我辛辛苦苦养出来的，你什么都没干，就多要10个贝壳？你太坏了！”。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="阅读笔记" scheme="http://yantinglam.com/categories/%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0/"/>
+    
+    
+      <category term="七年就是一辈子" scheme="http://yantinglam.com/tags/%E4%B8%83%E5%B9%B4%E5%B0%B1%E6%98%AF%E4%B8%80%E8%BE%88%E5%AD%90/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Spring Cloud - 服务注册与消费</title>
+    <link href="http://yantinglam.com/2016/12/20/SpringCloud-2016-12-20-Spring-Cloud-service-discovery/"/>
+    <id>http://yantinglam.com/2016/12/20/SpringCloud-2016-12-20-Spring-Cloud-service-discovery/</id>
+    <published>2016-12-20T06:27:29.000Z</published>
+    <updated>2016-12-29T06:38:42.000Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="什么是Spring-Cloud？"><a href="#什么是Spring-Cloud？" class="headerlink" title="什么是Spring Cloud？"></a>什么是Spring Cloud？</h3><p>&emsp;&emsp;Spring Cloud是一个基于Spring Boot实现的云应用开发工具，它为基于JVM的云应用开发中的配置管理、服务发现、断路器、智能路由、微代理、控制总线、全局锁、决策竞选、分布式会话和集群状态管理等操作提供了一种简单的开发方式。<br><a id="more"></a><br>&emsp;&emsp;Spring Cloud有众多子项目，如配置管理工具包Spring Cloud Config，可以把配置放在远程服务器上，集中化管理集群配置；又比如Spring Cloud Netfilx，该项目整合了Netflix OSS，可以直接在项目中使用Netflix OSS。想了解更多的Spring Cloud子项目，可以浏览<a href="https://springcloud.cc/" target="_blank" rel="external">https://springcloud.cc/</a> 。</p>
+<h3 id="服务注册中心"><a href="#服务注册中心" class="headerlink" title="服务注册中心"></a>服务注册中心</h3><p>&emsp;&emsp;在之前的文章《<a href="/2016/12/15/Service-discovery/index.html">服务发现机制</a>》中已经知道了服务发现机制对微服务架构的重要性。Spring Cloud框架实现服务发现是使用Eureka模块，是一种客户端发现机制。Netflix用Eureka模块来实现服务发现的服务端与客户端。</p>
+<p>&emsp;&emsp;在Eureka中，服务端是一个“服务注册中心”，服务实例在启动时把自己的元数据诸如主机和端口等信息提供给注册中心，并且通过发送心跳包来维持注册状态。如果心跳包接收超时，实例将会从注册中心中移除。注册中心主要是处理请求的接收者。</p>
+<p>&emsp;&emsp;某个服务实例需要访问其他的服务实例，需要在注册中心上，通过负载均衡机制找到相对应服务的网络位置，然后进行访问。</p>
+<h4 id="创建服务注册中心"><a href="#创建服务注册中心" class="headerlink" title="创建服务注册中心"></a>创建服务注册中心</h4><p>1.创建一个基础Spring Boot工程（在<a href="https://start.spring.io/" target="_blank" rel="external">https://start.spring.io/</a> 中创建下载再导入到IDE中），并在pom.xml引入Eureka Server的依赖。<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-test<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">scope</span>&gt;</span>test<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-eureka-server<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div><div class="line"></div><div class="line"><span class="tag">&lt;<span class="name">dependencyManagement</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-dependencies<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>Brixton.SR5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">type</span>&gt;</span>pom<span class="tag">&lt;/<span class="name">type</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">scope</span>&gt;</span>import<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencyManagement</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>2.在application.properties文件中进行配置。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">server.port=1111</div><div class="line">eureka.client.register-with-eureka=false</div><div class="line">eureka.client.fetch-registry=false</div><div class="line">eureka.client.serviceUrl.defaultZone=http://localhost:$&#123;server.port&#125;/eureka/</div></pre></td></tr></table></figure></p>
+<ul>
+<li>server.port：指定注册中心的访问端口</li>
+<li>eureka.client.register-with-eureka：是否注册到注册中心上，注册中心本身就无需注册了。该配置默认为true</li>
+<li>eureka.client.fetch-registry：该服务是否被获取到，同样注册中心本身无需被获取。该配置默认为true</li>
+<li>eureka.client.serviceUrl.defaultZone：指定服务注册中心的位置</li>
+</ul>
+<p>3.向入口程序添加@EnableEurekaServer注解，开启服务注册中心功能。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@EnableEurekaServer</span></div><div class="line"><span class="meta">@SpringBootApplication</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SpringCloudApplication</span> </span>&#123;</div><div class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</div><div class="line">		<span class="keyword">new</span> SpringApplicationBuilder(SpringCloudApplication.class).web(<span class="keyword">true</span>).run(args);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>这里还有一个@SpringBootApplication注解，此注解等价于@Configuration、@EnableAutoConfiguration以及@ComponentScan的集合，用于配置Spring程序。</p>
+<p>4.启动程序，访问<a href="http://localhost:1111/" target="_blank" rel="external">http://localhost:1111/</a> ，可以看到服务注册中心的管理界面</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-service-discovery/Eureka-Server.png" width="600" height="400"></p>
+<p>&emsp;&emsp;在这个界面上可以看到注册中心的状态以及服务的注册信息，通过“Instances currently registered width Eureka”这一栏可以知道现在还没有任何服务实例注册在上面。</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-service-discovery/None-instances-registered.png" width="800" height="500"></p>
+<h3 id="注册服务到注册中心"><a href="#注册服务到注册中心" class="headerlink" title="注册服务到注册中心"></a>注册服务到注册中心</h3><p>&emsp;&emsp;现在尝试创建一个简单功能的客户端服务程序，例如提供计算简单a+b功能的服务程序，并把该服务注册到注册中心上。</p>
+<p>1.创建一个简单的Spring Boot工程，并在pom.xml引入Eureka客户端依赖。<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-test<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">scope</span>&gt;</span>test<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-eureka<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div><div class="line"></div><div class="line"><span class="tag">&lt;<span class="name">dependencyManagement</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-dependencies<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>Brixton.SR5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">type</span>&gt;</span>pom<span class="tag">&lt;/<span class="name">type</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">scope</span>&gt;</span>import<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencyManagement</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>2.在application.properties文件中进行配置。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">spring.application.name=compute-service</div><div class="line">server.port=2222</div><div class="line">eureka.client.serviceUrl.defaultZone = http://localhost:1111/eureka/</div></pre></td></tr></table></figure></p>
+<ul>
+<li>spring.application.name：配置服务实例的名字，在后续的调用中，可以直接通过该名字对此服务进行访问</li>
+<li>server.port：指定服务实例的访问端口</li>
+<li>eureka.client.serviceUrl.defaultZone：指定要注册到上面的服务注册中心的位置</li>
+</ul>
+<p>3.向入口程序添加@EnableDiscoveryClient注解，激活DiscoveryClient的实现，这样才能注册到注册中心上面。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@EnableDiscoveryClient</span> <span class="comment">//该注释能激活DiscoveryClient的实现，实现controller中的信息输出</span></div><div class="line"><span class="meta">@SpringBootApplication</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ComputeServiceApplication</span> </span>&#123;</div><div class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</div><div class="line">		<span class="keyword">new</span> SpringApplicationBuilder(ComputeServiceApplication.class).web(<span class="keyword">true</span>).run(args);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>4.编写处理请求程序<br>新建一个类，如ComputeController.java，一般会放在web目录下。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@RestController</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ComputeController</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Logger logger = Logger.getLogger(getClass());</div><div class="line"></div><div class="line">    <span class="meta">@Autowired</span></div><div class="line">    <span class="keyword">private</span> DiscoveryClient client;</div><div class="line"></div><div class="line">    <span class="meta">@RequestMapping</span>(value = <span class="string">"/add"</span>, method = RequestMethod.GET)</div><div class="line">    <span class="function"><span class="keyword">public</span> Integer <span class="title">add</span><span class="params">(@RequestParam Integer a, @RequestParam Integer b)</span> </span>&#123;</div><div class="line">        Integer r = a + b;</div><div class="line"></div><div class="line">        ServiceInstance instance = client.getLocalServiceInstance();</div><div class="line">        logger.info(<span class="string">"a: "</span> + a + <span class="string">" b: "</span> + b);</div><div class="line">        logger.info(<span class="string">"/add, host: "</span> + instance.getHost() + <span class="string">", service_id: "</span> + instance.getServiceId() + <span class="string">", result: "</span> + r);</div><div class="line"></div><div class="line">        <span class="keyword">return</span> r;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>&emsp;&emsp;这里需要用到三个注解：@RestController、@RequestMapping以及@Autowired。</p>
+<ul>
+<li>@RestController注解被称为构造型注解，表明该类是一个支持REST的控制器。该注解告诉Spring以字符串的形式渲染结果，并直接返回给调用者</li>
+<li>@RequestMapping注解提供路由信息，在这个例子中，它告诉Spring将来自”/add”路径的HTTP请求都映射到add()方法，请求使用GET方法</li>
+<li>@Autowired注解可以对类成员变量、方法及构造函数进行标注，完成自动装配的工作，以此来消除get、set方法</li>
+</ul>
+<p>5.启动程序<br>&emsp;&emsp;访问<a href="http://localhost:2222/add?a=1&amp;b=2" target="_blank" rel="external">http://localhost:2222/add?a=1&amp;b=2</a> ，可以得到结果3，说明成功访问到该服务。此时刷新<a href="http://localhost:1111/" target="_blank" rel="external">http://localhost:1111/</a> ,可以看到该服务已经注册到了注册中心上：</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-service-discovery/Compute-service-registered.png" width="800" height="500"></p>
+<h3 id="消费服务实例"><a href="#消费服务实例" class="headerlink" title="消费服务实例"></a>消费服务实例</h3><p>&emsp;&emsp;现在有了注册中心，也有了一个能提供服务的实例注册到了注册中心上面，那么如何来消费这个服务实例呢？接下来再新建一个基础的Spring Boot工程，用这个工程来消费上面创建的compute-service服务。</p>
+<p>&emsp;&emsp;在编写这个消费程序之前，要知道Netflix里的这个Eureka模块是服务发现机制里的客户端发现模式，而客户端发现模式在请求一个服务时，会到服务注册中心中查询，然后使用负载均衡算法从多个服务实例中选择一个，再发出请求。这部分内容可以回顾《<a href="/2016/12/15/Service-discovery/index.html">服务发现机制</a>》。所以负载均衡在这里也是一个很重要的知识点。</p>
+<p>&emsp;&emsp;在Netflix中，使用Ribbon模块来实现负载均衡。Ribbon是一个基于HTTP和TCP客户端的负载均衡，可以通过客户端中配置的ribbonServerList服务端列表去轮询访问以达到负载均衡的作用。</p>
+<p>&emsp;&emsp;当Ribbon与Eureka配合使用时，ribbonSeverList会被DiscoveryEnableNIWSSeverList重写，这时就会变成从Eureka注册中心中获取服务端列表，同时也会用NIWSDiscoveryPing来取代IPing，它将职责委托给Eureka来确定服务端是否已经启动。</p>
+<h4 id="使用Riboon实现客户端负载均衡的消费者"><a href="#使用Riboon实现客户端负载均衡的消费者" class="headerlink" title="使用Riboon实现客户端负载均衡的消费者"></a>使用Riboon实现客户端负载均衡的消费者</h4><p>1.在刚刚新建的基础Spring Boot工程的pom.xml引入所需的Eureka客户端和Ribbon依赖。<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-ribbon<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-eureka<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-test<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">scope</span>&gt;</span>test<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div><div class="line"></div><div class="line"><span class="tag">&lt;<span class="name">dependencyManagement</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-dependencies<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>Brixton.SR5<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">type</span>&gt;</span>pom<span class="tag">&lt;/<span class="name">type</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">scope</span>&gt;</span>import<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencyManagement</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>2.在application.properties文件中进行配置。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">spring.application.name=ribbon-consumer</div><div class="line">server.port=3333</div><div class="line">eureka.client.serviceUrl.defaultZone=http://localhost:1111/eureka/</div></pre></td></tr></table></figure></p>
+<ul>
+<li>spring.application.name：配置服务实例的名字，在后续的调用中，可以直接通过该名字对此服务进行访问</li>
+<li>server.port：指定服务实例的访问端口</li>
+<li>eureka.client.serviceUrl.defaultZone：指定要注册到上面的服务注册中心的位置</li>
+</ul>
+<p>消费服务程序也需要注册到注册中心上，因为只有注册到上面，才能通过注册中心查找其他服务的位置进行消费。</p>
+<p>3.向入口程序添加@EnableDiscoveryClient</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@SpringBootApplication</span></div><div class="line"><span class="meta">@EnableDiscoveryClient</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RibbonApplication</span> </span>&#123;</div><div class="line"></div><div class="line">	<span class="meta">@Bean</span></div><div class="line">	<span class="meta">@LoadBalanced</span></div><div class="line">	<span class="function">RestTemplate <span class="title">restTemplate</span><span class="params">()</span> </span>&#123;</div><div class="line">		<span class="keyword">return</span> <span class="keyword">new</span> RestTemplate();</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</div><div class="line">		SpringApplication.run(RibbonApplication.class, args);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>@EnableDiscoveryClient注解激活DiscoveryClient实现，成为服务客户端，注册到服务注册中心上面</li>
+<li>@LoadBalanced注解开启负载均衡的能力</li>
+<li>@Bean注解声明一个Bean，是xml中的<bean>元素的直接模拟</bean></li>
+<li>RestTemplate类提供HTTP的各类方法，如GET、POST、HEAD、PUT、DELETE等，用于访问REST接口</li>
+</ul>
+<p>4.创建ComputeService类来消费compute-service服务<br>新建一个类，如ComputeService.java，一般放在web目录下。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@Service</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ComputeService</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="meta">@Autowired</span></div><div class="line">    RestTemplate restTemplate;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">addService</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> restTemplate.getForEntity(<span class="string">"http://COMPUTE-SERVICE/add?a=10&amp;b=20"</span>, String.class).getBody();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>@Service注解用于标注业务组件</li>
+<li>ResponseEntity<t> getForEntity(String url, Class<t> responseType)方法的作用是，向url发起GET请求，返回的结果被转换成responseType类型并保存到ResponseEntity对象里。在此例子中，就是对<a href="http://COMPUTE-SERVICE/add?a=10&amp;b=20" target="_blank" rel="external">http://COMPUTE-SERVICE/add?a=10&amp;b=20</a> 这个URL发起GET请求，此URL就是指向compute-service服务的，返回的结果被转换成String类型保存到了ResponseEntity对象中</t></t></li>
+</ul>
+<p>5.编写请求处理程序<br>新建一个类，如ConsumerController.java，一般放在web目录下。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@RestController</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ConsumerController</span> </span>&#123;</div><div class="line">    <span class="meta">@Autowired</span></div><div class="line">    <span class="keyword">private</span> ComputeService computeService;</div><div class="line"></div><div class="line">    <span class="meta">@RequestMapping</span>(value=<span class="string">"/add"</span>, method= RequestMethod.GET)</div><div class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">add</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> computeService.addService();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>6.启动程序<br>此时在注册中心上可以看到消费服务也注册到上面了，此时运行<a href="http://localhost:3333/add" target="_blank" rel="external">http://localhost:3333/add</a> ,可以看到通过compute-service计算，返回来的结果30。</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-service-discovery/Ribbon-registered.png" width="800" height="500"></p>
+<p>&emsp;&emsp;因为现在只启动了一个compute-service服务实例，所以看不出负载均衡的效果，可以将compute-service项目打包成jar包，然后通过命令行启动两个或多个compute-service服务实例。</p>
+<p>&emsp;&emsp;注意：打包的时候，每个compute-service服务的server.port端口要设置成不一样。</p>
+<p>&emsp;&emsp;IDEA打包jar可以参考此链接：<a href="http://blog.csdn.net/tolcf/article/details/50676171" target="_blank" rel="external">http://blog.csdn.net/tolcf/article/details/50676171</a></p>
+<p>&emsp;&emsp;打包成功后，依次启动注册中心服务、compute-service服务以及消费服务，此时在注册中心管理页面中看到有两个使用不同端口的compute-service服务注册到了上面：</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-service-discovery/Two-compute-service.png" wdith="800" height="500"></p>
+<p>&emsp;&emsp;此时访问两次<a href="http://localhost:3333/add" target="_blank" rel="external">http://localhost:3333/add</a> ，会看到两个compute-service都增加了一条log信息，说明两个服务都被访问了一次</p>
+<p>端口为2222的服务实例：</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-service-discovery/Compute-service1.png" width="800" height="500"></p>
+<p>端口为2223的服务实例：<br><img src="/images/SpringCloud/Spring-Cloud-service-discovery/Compute-service2.png" width="800" height="500"></p>
+<p><br><br>参考链接：<br><a href="http://blog.didispace.com/springcloud1/" target="_blank" rel="external">Spring Cloud构建微服务架构（一）服务注册与发现</a><br><a href="http://blog.didispace.com/springcloud2/" target="_blank" rel="external">Spring Cloud构建微服务架构（二）服务消费者</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;什么是Spring-Cloud？&quot;&gt;&lt;a href=&quot;#什么是Spring-Cloud？&quot; class=&quot;headerlink&quot; title=&quot;什么是Spring Cloud？&quot;&gt;&lt;/a&gt;什么是Spring Cloud？&lt;/h3&gt;&lt;p&gt;&amp;emsp;&amp;emsp;Spring Cloud是一个基于Spring Boot实现的云应用开发工具，它为基于JVM的云应用开发中的配置管理、服务发现、断路器、智能路由、微代理、控制总线、全局锁、决策竞选、分布式会话和集群状态管理等操作提供了一种简单的开发方式。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="技术" scheme="http://yantinglam.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="微服务" scheme="http://yantinglam.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+      <category term="Spring Cloud" scheme="http://yantinglam.com/tags/Spring-Cloud/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>从单体式架构迁移到微服务架构</title>
+    <link href="http://yantinglam.com/2016/12/16/Microservices-2016-12-16-Single-mode-app-to-micro-service/"/>
+    <id>http://yantinglam.com/2016/12/16/Microservices-2016-12-16-Single-mode-app-to-micro-service/</id>
+    <published>2016-12-16T08:02:00.000Z</published>
+    <updated>2017-01-05T07:02:42.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>&emsp;&emsp;从单体式架构迁移到微服务架构不应该通过从头重写代码的方式实现，而是应该通过逐步迁移的方式。<br><a id="more"></a></p>
+<h3 id="停止挖掘"><a href="#停止挖掘" class="headerlink" title="停止挖掘"></a>停止挖掘</h3><p>&emsp;&emsp;停止挖掘就是将新功能以一个独立的微服务方式实现，而不是往旧单体应用上继续添加代码，新的微服务通过接口接入到旧的单体应用中。</p>
+<p>&emsp;&emsp;除了将新功能开发为新服务之外，还需要增加两个模块来将旧单体应用与新服务连接起来，这两个模块分别是：</p>
+<ul>
+<li><p>请求路由器</p>
+<p class="li-explanation">&emsp;&emsp;负责处理入口（http）请求，将新功能的请求发送给新服务，将传统请求发送到传统单体应用。</p>
+</li>
+<li><p>glue code（胶水代码，也称为容灾层）</p>
+<p class="li-explanation">&emsp;&emsp;将微服务和单体应用集成起来，保护微服务全新域模型免受传统单体应用域模型的污染；而且还负责数据整合，提供两种模型间的翻译功能<br>&emsp;&emsp;glue code可以是在单体应用处，可以是在微服务处，也可以两都兼而有之。</p>
+
+</li>
+</ul>
+<p><img src="/images/Microservices/Single-mode-app-to-micro-service/Add-new-service-to-single-mode-app.png" width="400" height="400"></p>
+<h4 id="停止挖掘的优点："><a href="#停止挖掘的优点：" class="headerlink" title="停止挖掘的优点："></a>停止挖掘的优点：</h4><ul>
+<li>阻止单体应用变得更加的无法管理</li>
+<li>微服务本身可以开发、部署和独立扩展</li>
+</ul>
+<h3 id="前后端分离"><a href="#前后端分离" class="headerlink" title="前后端分离"></a>前后端分离</h3><p>&emsp;&emsp;前后端分离是将表现层与业务数据访问层分离，通过若干方面组成的粗粒度APIs将单体业务分割成两个更小的应用。<br><img src="/images/Microservices/Single-mode-app-to-micro-service/Separating-front-end-and-back-end.png" width="600" height="600"></p>
+<h4 id="前后端分离的好处："><a href="#前后端分离的好处：" class="headerlink" title="前后端分离的好处："></a>前后端分离的好处：</h4><ul>
+<li>使得应用分成两部分进行开发、部署和扩展</li>
+<li>允许表现层开发者在用户界面上快速选择，进行A/B测试</li>
+<li>一些远程API可以被微服务调用</li>
+</ul>
+<h3 id="抽出服务"><a href="#抽出服务" class="headerlink" title="抽出服务"></a>抽出服务</h3><p>&emsp;&emsp;将现成的模块抽取变成微服务。</p>
+<h4 id="模块抽取的顺序"><a href="#模块抽取的顺序" class="headerlink" title="模块抽取的顺序"></a>模块抽取的顺序</h4><ul>
+<li>根据获准程序排序，先抽取获益最大的，一般从经常变化的模块开始获益最大</li>
+<li>根据资源消耗程度排序，一般先抽取资源消耗最大的开始</li>
+<li>根据现有粗粒度边界来排序，将拥有粗粒度边界的两部分拆分</li>
+</ul>
+<h4 id="抽取步骤"><a href="#抽取步骤" class="headerlink" title="抽取步骤"></a>抽取步骤</h4><ol>
+<li>定义好模块和单体应用之间粗粒度接口</li>
+<li>将模块转换成独立服务</li>
+<li>开发、部署和扩展另外一个服务</li>
+</ol>
+<p><br><br>参考链接：<br><a href="http://dockone.io/article/1266" target="_blank" rel="external">微服务实践（七）：从单体式架构迁移到微服务架构</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;&amp;emsp;&amp;emsp;从单体式架构迁移到微服务架构不应该通过从头重写代码的方式实现，而是应该通过逐步迁移的方式。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="技术" scheme="http://yantinglam.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="微服务" scheme="http://yantinglam.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>微服务部署策略</title>
+    <link href="http://yantinglam.com/2016/12/16/Microservices-2016-12-16-Deployment-strategy-of-micro-service/"/>
+    <id>http://yantinglam.com/2016/12/16/Microservices-2016-12-16-Deployment-strategy-of-micro-service/</id>
+    <published>2016-12-16T05:44:05.000Z</published>
+    <updated>2017-01-05T07:02:38.000Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="单机多服务实例模式（传统的应用部署方法）"><a href="#单机多服务实例模式（传统的应用部署方法）" class="headerlink" title="单机多服务实例模式（传统的应用部署方法）"></a>单机多服务实例模式（传统的应用部署方法）</h3><p>&emsp;&emsp;这种模式需要提供若干台物理或虚拟机，每台机器上运行多个服务实例，每个服务实例运行一个或者多个主机的well-known端口。</p>
+<p>&emsp;&emsp;这种模式有两个参数：</p>
+<ul>
+<li>一个参数代表每个服务实例由多少个进程构成</li>
+<li>一个参数定义同一进程组内有多少服务实例运行<a id="more"></a>
+</li>
+</ul>
+<p><img src="/images/Microservices/Deployment-strategy-of-micro-service/Multi-instance-in-a-host.png" width="300" height="300"></p>
+<h4 id="单机多服务实例模式的优点"><a href="#单机多服务实例模式的优点" class="headerlink" title="单机多服务实例模式的优点"></a>单机多服务实例模式的优点</h4><ul>
+<li>资源利用有效性，多服务实例共享服务器和操作系统，如果进程组运行多个服务实例效率会更高</li>
+<li>部署服务实例很快，只需要将服务拷贝到主机并启动它</li>
+<li>网络负载很低，启动服务很快</li>
+</ul>
+<h4 id="单机多服务实例模式的缺点"><a href="#单机多服务实例模式的缺点" class="headerlink" title="单机多服务实例模式的缺点"></a>单机多服务实例模式的缺点</h4><ul>
+<li>服务实例间很少或者没有间隔，除非每个服务实例是独立的进程。因此要想精确监控每个实例的资源使用，就不能限制每个实例的资源使用，就可能造成某个糟糕的服务占用了主机的所有CPU或内存</li>
+<li>同一进程内的多服务实例没有间隔，某个糟糕的服务很容易攻击其他服务，而且可能无法监控每个实例的资源使用情况</li>
+<li>运维团队必须知道如何部署的详细步骤</li>
+</ul>
+<h3 id="单主机单服务实例模式"><a href="#单主机单服务实例模式" class="headerlink" title="单主机单服务实例模式"></a>单主机单服务实例模式</h3><h4 id="单虚拟机单实例"><a href="#单虚拟机单实例" class="headerlink" title="单虚拟机单实例"></a>单虚拟机单实例</h4><p>&emsp;&emsp;单虚拟机单实例模式一般是将服务打包成虚拟机映像，每个服务实例是一个使用此映像启动的VM。<br><img src="/images/Microservices/Deployment-strategy-of-micro-service/Single-instance-in-a-VM.png" width="500" height="500"></p>
+<h5 id="单虚拟机单实例的优点："><a href="#单虚拟机单实例的优点：" class="headerlink" title="单虚拟机单实例的优点："></a>单虚拟机单实例的优点：</h5><ul>
+<li>每个服务实例都是完全独立运行的，都有各自独立的CPU与内存而不会被其他服务占用</li>
+<li>用户可以使用成熟云架构</li>
+<li>服务实施技术被自包含了。一旦一个服务被打包成了VM就成为了一个黑盒子，VM的管理API成为部署服务的API，部署成为一个非常简单和可靠的事情</li>
+</ul>
+<h5 id="单虚拟机单实例的缺点："><a href="#单虚拟机单实例的缺点：" class="headerlink" title="单虚拟机单实例的缺点："></a>单虚拟机单实例的缺点：</h5><ul>
+<li>资源利用率不高</li>
+<li>部署服务新版本比较慢。虚拟镜像由于大小原因创建起来比较慢，虚拟机初始化也比较慢，操作系统启动也需要时间。</li>
+<li>运维团队工作量增大，他们负责许多客制化工作，除非使用Boxfuse之类的工具，可以帮助减轻大量创建和管理虚拟机的工作，否则将会花大量时间从事与核心业务无关的工作。</li>
+</ul>
+<h4 id="单容器单实例"><a href="#单容器单实例" class="headerlink" title="单容器单实例"></a>单容器单实例</h4><p>&emsp;&emsp;在单容器单实例模式中，每个服务实例都运行在各自的容器中，容器是运行在操作系统层面的虚拟化机制，这类容器技术包括Docker和Solaris Zones。</p>
+<p>&emsp;&emsp;一般在一台物理机或虚拟机上运行多个容器，一个容器包含若干个运行在沙箱中的进程，可以限制容器的内存和CPU资源。</p>
+<p>&emsp;&emsp;部署的时候，将服务打包成容器映像，一个容器映像是一个运行包含服务所需库和应用的文件系统。<br><img src="/images/Microservices/Deployment-strategy-of-micro-service/Single-instance-in-a-container.png" width="500" height="500"></p>
+<h5 id="单容器单实例的优点"><a href="#单容器单实例的优点" class="headerlink" title="单容器单实例的优点"></a>单容器单实例的优点</h5><ul>
+<li>服务实例之间完全独立，可以很容易监控每个容器消耗的资源</li>
+<li>像虚拟机一样，使用隔离技术部署服务</li>
+<li>容器管理API也可以作为管理服务的API</li>
+<li>容器是一个轻量级技术，容器映像创建起来很快，容器启动也很快</li>
+</ul>
+<h5 id="单容器单实例的缺点"><a href="#单容器单实例的缺点" class="headerlink" title="单容器单实例的缺点"></a>单容器单实例的缺点</h5><ul>
+<li>目前还不像虚拟机架构这么的成熟 </li>
+<li>容器之间共享host OS内核，因此并不像虚拟机那么安全</li>
+<li>容器技术将会对管理容器映像提出许多客制化需求，除非使用如Google Container Engine或者Amazon EC2 Container Service(ECS)，否则用户将同时需要管理容器架构及虚拟机架构</li>
+<li>容器经常被部署到按照虚拟机收费的架构上，一般情况下客户也会增加部署费用来应对负载的增长</li>
+</ul>
+<p><br><br>参考链接：<br><a href="http://dockone.io/article/1066" target="_blank" rel="external">微服务实战（六）：选择微服务部署策略</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;单机多服务实例模式（传统的应用部署方法）&quot;&gt;&lt;a href=&quot;#单机多服务实例模式（传统的应用部署方法）&quot; class=&quot;headerlink&quot; title=&quot;单机多服务实例模式（传统的应用部署方法）&quot;&gt;&lt;/a&gt;单机多服务实例模式（传统的应用部署方法）&lt;/h3&gt;&lt;p&gt;&amp;emsp;&amp;emsp;这种模式需要提供若干台物理或虚拟机，每台机器上运行多个服务实例，每个服务实例运行一个或者多个主机的well-known端口。&lt;/p&gt;
+&lt;p&gt;&amp;emsp;&amp;emsp;这种模式有两个参数：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;一个参数代表每个服务实例由多少个进程构成&lt;/li&gt;
+&lt;li&gt;一个参数定义同一进程组内有多少服务实例运行
+    
+    </summary>
+    
+      <category term="技术" scheme="http://yantinglam.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="微服务" scheme="http://yantinglam.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>微服务的数据管理问题</title>
+    <link href="http://yantinglam.com/2016/12/16/Microservices-2016-12-16-Data-management-of-micro-service/"/>
+    <id>http://yantinglam.com/2016/12/16/Microservices-2016-12-16-Data-management-of-micro-service/</id>
+    <published>2016-12-16T03:00:05.000Z</published>
+    <updated>2017-01-05T07:02:35.000Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="数据管理情况"><a href="#数据管理情况" class="headerlink" title="数据管理情况"></a>数据管理情况</h3><p>&emsp;&emsp;在微服务架构中，数据是服务私有的，外部要想访问某个服务的数据，唯一的访问方式是通过API。如果多个服务访问同一个数据，schema会更新访问时间，并在所有服务之间进行协调。也会有不同的微服务使用不同的数据库的情况，在这种情况下，应用会产生各种不同的数据，因此基于微服务的应用一般都使用SQL和NoSQL结合的数据库。<br><a id="more"></a></p>
+<h3 id="数据管理面临的挑战"><a href="#数据管理面临的挑战" class="headerlink" title="数据管理面临的挑战"></a>数据管理面临的挑战</h3><ul>
+<li>如何完成一笔交易的同时保持多个服务之间的数据一致性</li>
+<li>如何完成从多个服务中搜索数据，因为不同的服务之间数据库的设计不一样，所设置的查询条件也不一样</li>
+</ul>
+<h3 id="事件驱动架构（event-driven-architecture）"><a href="#事件驱动架构（event-driven-architecture）" class="headerlink" title="事件驱动架构（event driven architecture）"></a>事件驱动架构（event driven architecture）</h3><p>&emsp;&emsp;事件驱动架构是使用事件来实现跨多服务的业务交易。</p>
+<h4 id="事件驱动的实现机制"><a href="#事件驱动的实现机制" class="headerlink" title="事件驱动的实现机制"></a>事件驱动的实现机制</h4><p>&emsp;&emsp;当某件重要的性事情发生时，微服务会发布一个事件，如更新一个业务实体事件，当订阅这个事件的微服务接收到此事件时，就可以消费这个事件来更新自己的业务实体，如果有需要，这个服务会继续发出下一个事件，以此循环，直到所有事件处理完毕。</p>
+<p>&emsp;&emsp;基于这种交易模式的被称作为BASE model，它提供的是一种弱确定性，如最终一致性。<br><img src="/images/Microservices/Data-management-of-micro-service/Event-driven1.png" width="500" height="500"><br><img src="/images/Microservices/Data-management-of-micro-service/Event-driven2.png" width="500" height="500"><br><img src="/images/Microservices/Data-management-of-micro-service/Event-driven3.png" width="500" height="500"></p>
+<h4 id="事件驱动的优点"><a href="#事件驱动的优点" class="headerlink" title="事件驱动的优点"></a>事件驱动的优点</h4><ul>
+<li>可以使得交易跨多个服务且提供最终一致性</li>
+<li>可以使应用维护最终视图<br><img src="/images/Microservices/Data-management-of-micro-service/Event-driven4.png" width="500" height="500"></li>
+</ul>
+<h4 id="事件驱动的缺点："><a href="#事件驱动的缺点：" class="headerlink" title="事件驱动的缺点："></a>事件驱动的缺点：</h4><ul>
+<li>编程模式比ACID更加复杂 </li>
+<li>为了从应用层级失效中恢复，还需要完成补偿性交易</li>
+<li>当应用读取未更新的最终视图时，也会出现数据不一致问题</li>
+<li>事件订阅者必须检测和忽略冗余事件</li>
+</ul>
+<h3 id="处理原子性操作问题"><a href="#处理原子性操作问题" class="headerlink" title="处理原子性操作问题"></a>处理原子性操作问题</h3><p>&emsp;&emsp;数据库更新和事件的发布是一个原子操作.</p>
+<h4 id="获得原子性的方法："><a href="#获得原子性的方法：" class="headerlink" title="获得原子性的方法："></a>获得原子性的方法：</h4><h5 id="使用本地交易发布事件"><a href="#使用本地交易发布事件" class="headerlink" title="使用本地交易发布事件"></a>使用本地交易发布事件</h5><p>&emsp;&emsp;对发布事件应用采用multi-step process involving only local transactions，关键在于一张EVENT表，此表在存储业务实体数据库中起到消息列表的功能。</p>
+<h6 id="实现机制"><a href="#实现机制" class="headerlink" title="实现机制"></a>实现机制</h6><p>&emsp;&emsp;应用发起一个（本地）数据库交易，如更新业务实体状态，先向EVENT表中插入一个事件，然后提交此次交易；另外一个独立的应用进程或线程查询此EVENT表，向消息代理发布事件，然后使用本地交易标志此事件为已发布。<br><img src="/images/Microservices/Data-management-of-micro-service/Local-event.png" width="500" height="500"></p>
+<h6 id="使用本地交易发布事件的优点"><a href="#使用本地交易发布事件的优点" class="headerlink" title="使用本地交易发布事件的优点"></a>使用本地交易发布事件的优点</h6><ul>
+<li>可以确保事件发布不依赖于<a name="2PC" href="#2PC-explanation">2PC</a></li>
+<li>应用发布业务层级事件而不需要推断他们发生了什么</li>
+</ul>
+<h6 id="使用本地交易发布事件的缺点"><a href="#使用本地交易发布事件的缺点" class="headerlink" title="使用本地交易发布事件的缺点"></a>使用本地交易发布事件的缺点</h6><ul>
+<li>开发人员必须牢记发布事件，因此有可能出现错误</li>
+<li>对某些使用NoSQL数据库的应用是个挑战，因为NoSQL本身的交易和查询能力有限</li>
+</ul>
+<h5 id="挖掘数据库交易日志"><a href="#挖掘数据库交易日志" class="headerlink" title="挖掘数据库交易日志"></a>挖掘数据库交易日志</h5><p>&emsp;&emsp;此方法是应用更新数据库，使数据库交易日志发生了变化，交易日志挖掘进程或线程读这些交易日志，将日志发布给消息代理。<br><img src="/images/Microservices/Data-management-of-micro-service/Dig-DB.png" width="500" height="500"></p>
+<h6 id="挖掘数据库交易日志优点"><a href="#挖掘数据库交易日志优点" class="headerlink" title="挖掘数据库交易日志优点"></a>挖掘数据库交易日志优点</h6><ul>
+<li>确保每次更新发布事件不依赖于2PC</li>
+<li>交易日志挖掘可以通过将发布事件和应用业务逻辑分离得到简化</li>
+</ul>
+<h6 id="挖掘数据库交易日志缺点"><a href="#挖掘数据库交易日志缺点" class="headerlink" title="挖掘数据库交易日志缺点"></a>挖掘数据库交易日志缺点</h6><ul>
+<li>交易日志对不同的数据库有不同的格式，甚至不同数据库版本也有不同的格式</li>
+<li>很难从底层交易日志更新记录转换为高层业务事件</li>
+</ul>
+<h5 id="使用事件源"><a href="#使用事件源" class="headerlink" title="使用事件源"></a>使用事件源</h5><p>&emsp;&emsp;此方法的应用保存业务实体一系列状态改变的事件，而不是存储实体现在的状态，应用可以通过重放事件来重建实体现在的状态。只要业务实体发生改变，新事件就会添加到时间表中，因为保存事件是单一操作，所以肯定是原子性的操作。如在事件源方式中，订单服务以事件状态改变方式存储一个订单：创建的、已批准的、已发货的、取消的；每个事件包含足够的信息来重建订单状态。</p>
+<p>&emsp;&emsp;事件存储是事件驱动微服务架构的基干，它跟消息代理类似，将事件递送到所有感兴趣的订阅者，订阅都通过提供的API来订阅事件。事件被长期保存在事件数据库中，通过API来添加或获取实体事件。<br><img src="/images/Microservices/Data-management-of-micro-service/Event-source.png" width="700" height="700"></p>
+<h6 id="使用事件源的优点："><a href="#使用事件源的优点：" class="headerlink" title="使用事件源的优点："></a>使用事件源的优点：</h6><ul>
+<li>解决事件驱动架构关键问题，使得只要有状态变化就可以可靠地发布事件，也就解决了微服务架构的数据一致性问题</li>
+<li>因为是持久化事件而不是对象，就不会出现object relational impedance mismatch problem（对象-关系阻抗失配问题）</li>
+<li>提供了100%可靠的业务实体变化监控日志，使用获取任何时点的实体状态成为可能</li>
+<li>使得业务逻辑可以由事件交换的松耦合业务实体构成</li>
+<li>使得单体应用移值到微服务时变得相对简单</li>
+</ul>
+<h6 id="使用事件源的缺点："><a href="#使用事件源的缺点：" class="headerlink" title="使用事件源的缺点："></a>使用事件源的缺点：</h6><ul>
+<li>事件存储只支持主键查询业务实体</li>
+<li>必须使用Command Responsiblity Segregation(CQRS)来完成查询业务，因此应用必须处理最终一致数据</li>
+<li>因为采用不同或不太熟悉的变成模式，重新学习不太容易 </li>
+</ul>
+<p><br><br>注释：<br><a name="2PC-explanation" href="#2PC">2PC：</a>Tow-phase Commit Protocol - 二阶段提交协议</p>
+<p><br><br>参考链接：<br><a href="http://dockone.io/article/936" target="_blank" rel="external">微服务实践（五）：微服务的事件驱动数据管理</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;数据管理情况&quot;&gt;&lt;a href=&quot;#数据管理情况&quot; class=&quot;headerlink&quot; title=&quot;数据管理情况&quot;&gt;&lt;/a&gt;数据管理情况&lt;/h3&gt;&lt;p&gt;&amp;emsp;&amp;emsp;在微服务架构中，数据是服务私有的，外部要想访问某个服务的数据，唯一的访问方式是通过API。如果多个服务访问同一个数据，schema会更新访问时间，并在所有服务之间进行协调。也会有不同的微服务使用不同的数据库的情况，在这种情况下，应用会产生各种不同的数据，因此基于微服务的应用一般都使用SQL和NoSQL结合的数据库。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="技术" scheme="http://yantinglam.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="微服务" scheme="http://yantinglam.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>照片曝光问题</title>
+    <link href="http://yantinglam.com/2016/12/15/Photography-2016-12-15-Problem-of-photo-disposure/"/>
+    <id>http://yantinglam.com/2016/12/15/Photography-2016-12-15-Problem-of-photo-disposure/</id>
+    <published>2016-12-15T12:30:06.000Z</published>
+    <updated>2016-12-21T02:10:06.000Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="什么是曝光？"><a href="#什么是曝光？" class="headerlink" title="什么是曝光？"></a>什么是曝光？</h3><p>&emsp;&emsp;曝光就是让感光材料接受光线的照射，影响的是整体画面的亮暗程度。</p>
+<p>&emsp;&emsp;影响曝光的三个因素：光圈、快门、感光度。<br><a id="more"></a></p>
+<h3 id="光圈"><a href="#光圈" class="headerlink" title="光圈"></a>光圈</h3><p>&emsp;&emsp;光圈是用来控制光线进入量的。光圈越大，光线进入得就越多；相反光圈越小，光线进入得就越少。在参数的体现上，光圈的数值与实际光圈大小是成反比的，即光圈数值越大，实际光圈越小；相反光圈数值越小，实际光圈越大。</p>
+<h3 id="快门"><a href="#快门" class="headerlink" title="快门"></a>快门</h3><p>&emsp;&emsp;快门是用来控制曝光时间长短的。快门越快，曝光时间越短；相反快门越慢，曝光时间越长。在参数的体现上，快门的数值与实际快门速度是成正比的，即快门数值越大，实际快门速度越快；相反快门数值越小，实际快门速度越慢。</p>
+<p>&emsp;&emsp;快门的实际速度一般以1/X秒来计算，如快门数值为60，那么实际的快门速度就是1/60秒。</p>
+<p>&emsp;&emsp;适合用慢速快门拍照的场景：</p>
+<ul>
+<li>有水的地方，如瀑布、小河小溪、湖面等</li>
+<li>体育运动</li>
+<li>街拍纪实</li>
+<li>舞台</li>
+</ul>
+<p>&emsp;&emsp;注意：快门的速度要设置得比物体运动的速度慢。</p>
+<h3 id="感光度-ISO"><a href="#感光度-ISO" class="headerlink" title="感光度(ISO)"></a>感光度(ISO)</h3><p>&emsp;&emsp;感光度是指感光材料对光线的敏感程度。感光度越高，敏感程度越大；相反感光度越低，敏感程度越小。在参数的体现上，感光度的数值与实际敏感程度成正比，即感光度数值越大，实际越敏感；相反感光度数值越小，实际越不敏感。</p>
+<h3 id="光圈、快门、感光度的国际参数值"><a href="#光圈、快门、感光度的国际参数值" class="headerlink" title="光圈、快门、感光度的国际参数值"></a>光圈、快门、感光度的国际参数值</h3><p>&emsp;&emsp;光圈、快门、感光度的国际参数值都有固定的档数值。<br><img src="/images/Photography/Problem-of-photo-disposure/Datas.jpg" width="500" height="200"></p>
+<h4 id="曝光参数的换算题"><a href="#曝光参数的换算题" class="headerlink" title="曝光参数的换算题"></a>曝光参数的换算题</h4><p>&emsp;&emsp;有一张相片的拍摄参数如下：光圈大小为f8，快门速度为1/30s，感光度为100。</p>
+<p>&emsp;&emsp;问题一：如果保持感光度不变，光圈大小变为f4，如果要达到同样的曝光效果，那么快门的速度要变成多少？</p>
+<p>&emsp;&emsp;首先这个问题可以类比成水龙头接水问题。如下图所示，往同样容积的杯子里装水，水龙头的出水速率越大，将满杯子所需的时间就越短。那么现在将曝光效果比作装满一杯子水这个情况，将光圈比作水龙头，入射光线比作水流，将快门速度比作装满水所需的时间长短。</p>
+<p>&emsp;&emsp;在装水的问题上，如果将水龙头关小，那么装满一杯水的时间就会变长。所以同样道理，如果将光圈调小，要达到同样的曝光效果，那么快门速度就要变慢。</p>
+<p>&emsp;&emsp;看回题目，光圈大小变为f5.6，就是比原来的f8小了两档，由于光圈参数与实际光圈大小成反比，所以实际光圈是变大了两档，进光量就是变多了，那么要达到同样的曝光效果，快门速度就要变快两档，由于快门参数与实际快门速度成正比，所以快门参数要调大两档，为125。</p>
+<p><img src="/images/Photography/Problem-of-photo-disposure/Water-example.jpg" width="500" height="200"></p>
+<p>&emsp;&emsp;问题二：当感光度变为400，要达到同样的曝光效果，光圈与快门要如何调整？</p>
+<p>&emsp;&emsp;这个问题的答案有多个组合：</p>
+<ul>
+<li>当光圈大小不变，感光度增加两档，就代表材料的感光敏感度提高了两档，在这个情况下，要想曝光效果相同，就要缩短曝光时间，所以快门速度要变快，由于快门参数与实际快门速度成正比，所以快门参数应调为125。</li>
+<li>当快门速度不变，感光度增加两档，代表材料的感光敏感度提高了两档，要想曝光效果相同，就要减少光线的进入量，所以要将光圈调小，由于光圈参数与实际光圈大小成反比，所以光圈参数应调为f16。</li>
+<li>总结一下上面两个情况，当光圈不变时，快门增加两档；当快门不变时，光圈增加两档，所以在这个情况下，只要保证光圈和快门的变化档数总和为2，曝光效果就会相同，所以还可以有以下的调整组合：光圈调为f11，快门调为125；光圈调为f5.6，快门调为250；光圈调为f4，快门调为500等等。</li>
+</ul>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;什么是曝光？&quot;&gt;&lt;a href=&quot;#什么是曝光？&quot; class=&quot;headerlink&quot; title=&quot;什么是曝光？&quot;&gt;&lt;/a&gt;什么是曝光？&lt;/h3&gt;&lt;p&gt;&amp;emsp;&amp;emsp;曝光就是让感光材料接受光线的照射，影响的是整体画面的亮暗程度。&lt;/p&gt;
+&lt;p&gt;&amp;emsp;&amp;emsp;影响曝光的三个因素：光圈、快门、感光度。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="爱好" scheme="http://yantinglam.com/categories/%E7%88%B1%E5%A5%BD/"/>
+    
+    
+      <category term="摄影" scheme="http://yantinglam.com/tags/%E6%91%84%E5%BD%B1/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>摄影基础知识</title>
+    <link href="http://yantinglam.com/2016/12/15/Photography-2016-12-15-Fundamentals-of-photography/"/>
+    <id>http://yantinglam.com/2016/12/15/Photography-2016-12-15-Fundamentals-of-photography/</id>
+    <published>2016-12-15T12:03:06.000Z</published>
+    <updated>2016-12-21T02:10:00.708Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="画幅"><a href="#画幅" class="headerlink" title="画幅"></a>画幅</h3><p>&emsp;&emsp;画幅就是感觉材料的大小</p>
+<h4 id="全画幅与非全画幅"><a href="#全画幅与非全画幅" class="headerlink" title="全画幅与非全画幅"></a>全画幅与非全画幅</h4><p>&emsp;&emsp;全画幅就是以前胶卷的大小，为36*24mm。除了这个大小的，其他画幅都是非全画幅。现在有很多种画幅尺寸，如下图。<br><a id="more"></a><br><img src="/images/Photography/Fundamentals-of-photography/Size-of-frame.jpg" width="500" height="300"></p>
+<h3 id="焦距"><a href="#焦距" class="headerlink" title="焦距"></a>焦距</h3><p>&emsp;&emsp;焦距是成像中心到焦平面的距离。<br>&emsp;&emsp;焦距越短，视角范围越广，相反焦距越长，视角范围越窄。这是什么感觉呢？就是在相同距离的情况下，焦距变得，感觉就是把远处的东西放大。</p>
+<h3 id="标准镜头"><a href="#标准镜头" class="headerlink" title="标准镜头"></a>标准镜头</h3><p>&emsp;&emsp;标准镜头就是焦距长度和画幅对角线长度大致相等的摄影镜头，即焦距长度大致等于46mm，所以一般焦距长度为50mm的为标准镜头。</p>
+<p>&emsp;&emsp;按照焦距长度可以分为广角镜头，标准镜头和长焦镜头，焦距长度比较如下：广角镜头&lt;标准镜头&lt;长焦镜头。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;画幅&quot;&gt;&lt;a href=&quot;#画幅&quot; class=&quot;headerlink&quot; title=&quot;画幅&quot;&gt;&lt;/a&gt;画幅&lt;/h3&gt;&lt;p&gt;&amp;emsp;&amp;emsp;画幅就是感觉材料的大小&lt;/p&gt;
+&lt;h4 id=&quot;全画幅与非全画幅&quot;&gt;&lt;a href=&quot;#全画幅与非全画幅&quot; class=&quot;headerlink&quot; title=&quot;全画幅与非全画幅&quot;&gt;&lt;/a&gt;全画幅与非全画幅&lt;/h4&gt;&lt;p&gt;&amp;emsp;&amp;emsp;全画幅就是以前胶卷的大小，为36*24mm。除了这个大小的，其他画幅都是非全画幅。现在有很多种画幅尺寸，如下图。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="爱好" scheme="http://yantinglam.com/categories/%E7%88%B1%E5%A5%BD/"/>
+    
+    
+      <category term="摄影" scheme="http://yantinglam.com/tags/%E6%91%84%E5%BD%B1/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>相机的分类</title>
+    <link href="http://yantinglam.com/2016/12/15/Photography-2016-12-15-Classification-of-cameras/"/>
+    <id>http://yantinglam.com/2016/12/15/Photography-2016-12-15-Classification-of-cameras/</id>
+    <published>2016-12-15T11:03:06.000Z</published>
+    <updated>2016-12-21T02:09:55.000Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="摄影与摄影器材"><a href="#摄影与摄影器材" class="headerlink" title="摄影与摄影器材"></a>摄影与摄影器材</h3><p>&emsp;&emsp;摄影最本质的是一种画面语言的表达，而摄影器材只是辅助摄影的一种工具。所以拍出一张好的照片的关键不在于手上的摄影器材有多贵多高级，在于摄影师对摄影的感悟，对所拍事物的感知与表达能力。</p>
+<blockquote>
+<p>伟大摄影师的伟大地方，不是他的技术，更不是他所用的器材，而是他的品格和内涵<br><a id="more"></a></p>
+</blockquote>
+<p>&emsp;&emsp;虽然说摄影器材不是关键，但是熟练掌握器材的使用也是摄影师所需的一项能力，接下来认识认识一下摄影器材。</p>
+<h3 id="相机的分类"><a href="#相机的分类" class="headerlink" title="相机的分类"></a>相机的分类</h3><p>目前市面上的摄影相机按结构分类主要有以下几种：</p>
+<ul>
+<li>单镜头相机</li>
+<li>双镜头相机</li>
+<li>单电相机</li>
+<li>旁轴相机</li>
+<li>大画幅相机</li>
+</ul>
+<h3 id="单镜头相机"><a href="#单镜头相机" class="headerlink" title="单镜头相机"></a>单镜头相机</h3><p>&emsp;&emsp;单镜头相机顾名思义就是只有一个镜头的相机，我们一般认识的很高大尚的“单反”就是这一类相机，单反的全称是单镜头反光相机。单反里的“反光”是什么意思呢？</p>
+<p>&emsp;&emsp;首先要知道单反里面有两个重要的器件，一块是反光镜，一块是五棱镜。“反光”从字面的意思就是反射光线，那么怎么反射呢？可以看看下面的这张单反的光路示意图。首先光线从镜头进入到相机内部，通过反光镜反射到上面的五棱镜，再通过五棱镜反射到取景器，这样我们就可以从取景器里看到镜头外的景象了。这种能过光学原理来看到景象的取景器叫做光学取景器。</p>
+<p>&emsp;&emsp;通过下面这张示意图，我们也能来理解一下单反相机的工作原理。在正常情况下，入射光线会通过反光镜和五棱镜反射到取景器使我们能在取景器看到景象。而在我们按下快门进行拍摄时，相机内的反光镜就会被抬起，反光镜抬起后，入射光线就会直接投射到感光材料上，在感觉材料上进行曝光，形成照片。所以当我们按下快门进行拍摄时，会发现从取景器里看会黑了一会，这是因为此时入射光线投射到感光材料而没有反射到取景器的原因。</p>
+<p>&emsp;&emsp;单反的快门是机械快门，所以每一次按快门都会让快门有所损伤，所以这种机械快门是有寿命期限的，一般是15W~20W次，不过一般这个次数足够我们尽情拍摄了。<br><img src="/images/Photography/Classification-of-cameras/Single-reflective.jpg" width="500" height="500"></p>
+<h3 id="双镜头相机"><a href="#双镜头相机" class="headerlink" title="双镜头相机"></a>双镜头相机</h3><p>&emsp;&emsp;双镜头言下之意就是有两个镜头，目前市面上还有得卖，不过相对比较少了。下面这张图就是双镜头相机的样子。<br><img src="/images/Photography/Classification-of-cameras/Double-lens.jpg" width="200" height="200"></p>
+<p>&emsp;&emsp;双镜头相机的两个镜头是分工合作，有属于自己的功能的。上面的镜头是用来取景和构图的，下面的镜头是用来曝光作真正的拍摄的。</p>
+<p>&emsp;&emsp;上面的这台双镜头相机也叫双反相机，就是双镜头反光相机。它和单反一样，里面也有一块反光镜，但是没有五棱镜，那么会造成什么区别呢？看看下面这张双反相机的光路示意图。上面镜头的入射光线通过反光板反射到上面的取景器，所以使用双反相机是要从上往下俯视取景器进行拍摄的。更有意思的是，从取景器看到的景象是左右反着的，这就涉及光学原理了。</p>
+<p><img src="/images/Photography/Classification-of-cameras/Double-reflective.jpg" width="300" height="300"></p>
+<h3 id="旁轴相机"><a href="#旁轴相机" class="headerlink" title="旁轴相机"></a>旁轴相机</h3><p>&emsp;&emsp;旁轴相机就是以前很常见的那种取景器在角落的相机，这种相机的取景器盖上镜头后也能看得见。<br><img src="/images/Photography/Classification-of-cameras/Side-by-side-camera.jpg" width="200" height="200"></p>
+<h3 id="大画幅相机"><a href="#大画幅相机" class="headerlink" title="大画幅相机"></a>大画幅相机</h3><p>&emsp;&emsp;这种相机现在在影视作品中看得比较多<br><img src="/images/Photography/Classification-of-cameras/Big-frame.jpg" width="200" height="200"></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;摄影与摄影器材&quot;&gt;&lt;a href=&quot;#摄影与摄影器材&quot; class=&quot;headerlink&quot; title=&quot;摄影与摄影器材&quot;&gt;&lt;/a&gt;摄影与摄影器材&lt;/h3&gt;&lt;p&gt;&amp;emsp;&amp;emsp;摄影最本质的是一种画面语言的表达，而摄影器材只是辅助摄影的一种工具。所以拍出一张好的照片的关键不在于手上的摄影器材有多贵多高级，在于摄影师对摄影的感悟，对所拍事物的感知与表达能力。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;伟大摄影师的伟大地方，不是他的技术，更不是他所用的器材，而是他的品格和内涵&lt;br&gt;
+    
+    </summary>
+    
+      <category term="爱好" scheme="http://yantinglam.com/categories/%E7%88%B1%E5%A5%BD/"/>
+    
+    
+      <category term="摄影" scheme="http://yantinglam.com/tags/%E6%91%84%E5%BD%B1/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>服务发现机制</title>
+    <link href="http://yantinglam.com/2016/12/15/Microservices-2016-12-15-Service-discovery/"/>
+    <id>http://yantinglam.com/2016/12/15/Microservices-2016-12-15-Service-discovery/</id>
+    <published>2016-12-15T08:07:08.000Z</published>
+    <updated>2017-01-05T07:02:31.000Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="什么是服务发现机制？"><a href="#什么是服务发现机制？" class="headerlink" title="什么是服务发现机制？"></a>什么是服务发现机制？</h3><p>&emsp;&emsp;服务发现机制说白了就是用来找到微服务架构中各个服务实例的一个机制。<br><a id="more"></a></p>
+<h3 id="为什么需要服务发现机制"><a href="#为什么需要服务发现机制" class="headerlink" title="为什么需要服务发现机制?"></a>为什么需要服务发现机制?</h3><p>&emsp;&emsp;在微服务架构中，各个服务实例的网络位置（IP地址和端口）是动态改变的，而使用服务时需要知道相应服务的网络位置才能找到对应该的服务实例，所以需要一种较为复杂的服务发现机制来协助。</p>
+<h3 id="服务发现模式"><a href="#服务发现模式" class="headerlink" title="服务发现模式"></a>服务发现模式</h3><p>&emsp;&emsp;有两大模式：客户端发现以及服务端发现。</p>
+<h4 id="客户端发现模式"><a href="#客户端发现模式" class="headerlink" title="客户端发现模式"></a>客户端发现模式</h4><p>&emsp;&emsp;在客户端发现模式中，服务实例在启动时会把网络位置注册到注册服务的注册表中，当服务终止时会从注册表中删除。</p>
+<p>&emsp;&emsp;客户端需要请求一个服务时，会到服务注册服务中查询，使用均衡负载算法从多个服务实例中选择一个，然后发出请求。</p>
+<p>&emsp;&emsp;服务实例注册信息一般是通过心跳机制来定期刷新。<br><img src="/images/Microservices/Service-discovery/Client-discovery.png" width="500" height="500"></p>
+<h5 id="客户端发现模式的优点"><a href="#客户端发现模式的优点" class="headerlink" title="客户端发现模式的优点"></a>客户端发现模式的优点</h5><ul>
+<li>相对比较直接，除了服务注册表，没有其他改变因素</li>
+<li>客户端可以使用哈希一致性变得更加聪明，能更加有效地实现负载均衡</li>
+</ul>
+<h5 id="客户端发现模式的缺点"><a href="#客户端发现模式的缺点" class="headerlink" title="客户端发现模式的缺点"></a>客户端发现模式的缺点</h5><ul>
+<li>需要针对不同的编程语言实现相应的服务注册</li>
+</ul>
+<h4 id="服务端发现模式"><a href="#服务端发现模式" class="headerlink" title="服务端发现模式"></a>服务端发现模式</h4><p>&emsp;&emsp;在服务端发现模式中，客户端通过负载均衡器向某个服务提出请求，负载均衡器向服务注册表发出请求，将每个请求转发往可用的服务实例。</p>
+<p>&emsp;&emsp;像客户端发现一样，服务实例在注册表中注册与注销。<br><img src="/images/Microservices/Service-discovery/Server-discovery.png" width="600" height="600"></p>
+<h5 id="服务端发现模式的优点"><a href="#服务端发现模式的优点" class="headerlink" title="服务端发现模式的优点"></a>服务端发现模式的优点</h5><ul>
+<li>客户端无须关注发现的细节，只需要简单的向负载均衡器发送请求</li>
+</ul>
+<h5 id="服务端发现模式的缺点"><a href="#服务端发现模式的缺点" class="headerlink" title="服务端发现模式的缺点"></a>服务端发现模式的缺点</h5><ul>
+<li>除非部署环境提供负载均衡器，否则负载均衡器是另一个需要配置的高可用系统功能</li>
+</ul>
+<h3 id="服务注册表"><a href="#服务注册表" class="headerlink" title="服务注册表"></a>服务注册表</h3><p>&emsp;&emsp;服务注册表是服务发现的关键部分，它由若干使用复制协议保持同步的服务器构成，包含服务实例的网络地址。</p>
+<p>&emsp;&emsp;服务注册表提供了注册管理API和请求API，注册管理API用于实现服务实例的注册与注销；请求API用于发现可用的服务实例。</p>
+<p>&emsp;&emsp;服务注册表需要是高可用的，而且能随时更新的。</p>
+<h3 id="服务注册的方式"><a href="#服务注册的方式" class="headerlink" title="服务注册的方式"></a>服务注册的方式</h3><h4 id="自注册方式"><a href="#自注册方式" class="headerlink" title="自注册方式"></a>自注册方式</h4><p>&emsp;&emsp;自注册方式是服务实例负责在服务注册表中注册和注销，如有需要的话，服务实例也要发送心跳来保证注册信息不会过时。</p>
+<h5 id="自注册方式的优点"><a href="#自注册方式的优点" class="headerlink" title="自注册方式的优点"></a>自注册方式的优点</h5><ul>
+<li>相对比较简单，不需要其他系统功能</li>
+</ul>
+<h5 id="自注册方式的缺点"><a href="#自注册方式的缺点" class="headerlink" title="自注册方式的缺点"></a>自注册方式的缺点</h5><ul>
+<li>把服务实例与服务注册表联系起来，就必须在每种编程语言和框架内部实现注册代码</li>
+</ul>
+<h4 id="第三方注册方式"><a href="#第三方注册方式" class="headerlink" title="第三方注册方式"></a>第三方注册方式</h4><p>&emsp;&emsp;第三方注册方式是由另外一个模块-服务管理器系统负责注册。服务管理器通过查询部署环境或订阅事件来跟踪运行服务的改变，当发现一个新的可用服务，服务管理器会向注册表注册此服务，而服务的注销也由服务管理器负责。</p>
+<h5 id="第三方注册方式的优点"><a href="#第三方注册方式的优点" class="headerlink" title="第三方注册方式的优点"></a>第三方注册方式的优点</h5><ul>
+<li>服务实例与服务注册表是分离的，不需要为每种编程语言和框架实现注册代码，而是由集中管理的服务进行管理</li>
+</ul>
+<h5 id="第三方注册方式的缺点"><a href="#第三方注册方式的缺点" class="headerlink" title="第三方注册方式的缺点"></a>第三方注册方式的缺点</h5><ul>
+<li>除非这个服务是内置于部署环境中的，否则服务管理器也是一个需要配置的高可用系统 </li>
+</ul>
+<p><br><br>参考链接：<br><a href="http://dockone.io/article/771" target="_blank" rel="external">微服务实战（四）：服务发现的可行方案以及实践案例</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;什么是服务发现机制？&quot;&gt;&lt;a href=&quot;#什么是服务发现机制？&quot; class=&quot;headerlink&quot; title=&quot;什么是服务发现机制？&quot;&gt;&lt;/a&gt;什么是服务发现机制？&lt;/h3&gt;&lt;p&gt;&amp;emsp;&amp;emsp;服务发现机制说白了就是用来找到微服务架构中各个服务实例的一个机制。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="技术" scheme="http://yantinglam.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="微服务" scheme="http://yantinglam.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>微服务架构的IPC</title>
+    <link href="http://yantinglam.com/2016/12/15/Microservices-2016-12-15-IPC-of-micro-service/"/>
+    <id>http://yantinglam.com/2016/12/15/Microservices-2016-12-15-IPC-of-micro-service/</id>
+    <published>2016-12-15T07:07:08.000Z</published>
+    <updated>2017-01-05T07:02:27.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>&emsp;&emsp;IPC即进程间通信（Inter-Porcess Communication）。微服务架构中有两类IPC机制可选：异步消息机制和同步请求/响应机制。<a id="more"></a></p>
+<h3 id="异步消息机制："><a href="#异步消息机制：" class="headerlink" title="异步消息机制："></a>异步消息机制：</h3><p>&emsp;&emsp;异步消息机制是基于消息进行通信的。一个消息由头部（元数据，如发送方信息）和消息体构成，消息通过channel发送。</p>
+<p>&emsp;&emsp;任何数量的生产者都可以发送消息到channel中，同样任何数量的消费者都可以从channel中接受数据。</p>
+<h4 id="Channel的种类："><a href="#Channel的种类：" class="headerlink" title="Channel的种类："></a>Channel的种类：</h4><ul>
+<li>点对点channel<p class="li-explanation">&emsp;&emsp;把消息准确地发送到某个会从channel中读取该消息的消费者。</p></li>
+<li>发布/订阅channel<p class="li-explanation">&emsp;&emsp;把消息投送到所有从channel中读取该消息的消费者。</p>
+
+</li>
+</ul>
+<h4 id="异步消息机制的优点："><a href="#异步消息机制的优点：" class="headerlink" title="异步消息机制的优点："></a>异步消息机制的优点：</h4><ul>
+<li>解耦客户端与服务端<p class="li-explanation">&emsp;&emsp;客户端只需要将消息发送到正确的channel上，完全不需要了解具体的服务实例。</p></li>
+<li>消息缓冲<p class="li-explanation">&emsp;&emsp;消息协商器将所有写入channel的消息按照队列方式管理，直到被消息者处理，这样的话，只要保证消息进入到消息队列中，即使系统很慢甚至暂时不可用也没关系，因为队列中会一直保存着这个消息。</p></li>
+<li>弹性的客户端-服务端交互</li>
+<li>直接的进行进程通信</li>
+</ul>
+<h4 id="异步消息机制的缺点："><a href="#异步消息机制的缺点：" class="headerlink" title="异步消息机制的缺点："></a>异步消息机制的缺点：</h4><ul>
+<li>额外的操作复杂性<p class="li-explanation">&emsp;&emsp;消息系统需要单独安装、配置和部署。消息协商器必须要是高可用的。</p></li>
+<li>实现基于请求/响应交互模式时会变得比较复杂<p class="li-explanation">&emsp;&emsp;在异步消息机制中，每个请求消息必须包含一个回复渠道ID和相关的ID，处理基于请求/响应交互的模式时，服务端发送一个包含相关ID的消息到channel中，使用相关ID来响应对应发出请求的客户端。如此一来，使用一个直接支持请求/响应的IPC机制会更容易些。</p>
+
+</li>
+</ul>
+<h3 id="同步请求-响应机制："><a href="#同步请求-响应机制：" class="headerlink" title="同步请求/响应机制："></a>同步请求/响应机制：</h3><p>&emsp;&emsp;同步请求/响应是客户端向服务端发送一个请求，服务端处理请求，然后返回响应。</p>
+<h4 id="RESTful："><a href="#RESTful：" class="headerlink" title="RESTful："></a>RESTful：</h4><p>&emsp;&emsp;首先了解一下什么是REST？REST是一个资源，一般代表一个业务对象。</p>
+<p>&emsp;&emsp;RESTful API是基于HTTP的一种协议，使用HTTP语法协议来修改资源。</p>
+<h5 id="RESTful-API成熟度模型："><a href="#RESTful-API成熟度模型：" class="headerlink" title="RESTful API成熟度模型："></a>RESTful API成熟度模型：</h5><ul>
+<li>Level0的web服务只是使用HTTP作为传输方式，实际上只是<a name="RPC" href="#RPC-explanation">RPC</a>用的一种具体形式</li>
+<li>Level1的web服务引入了资源的概念，每个资源有对应的标识符和表达</li>
+<li>Level2的web服务使用不同的HTTP方法进行不同的操作，并使用HTTP状态码来表示不同的结果</li>
+<li>Level3的web服务使用<a name="HATEOAS" href="#HATEOAS-explanation">HATEOAS</a>，在资源的表达中包含了资源的链接信息，客户端可以根据链接来发现可执行的动作</li>
+</ul>
+<h5 id="使用HTTP的优点："><a href="#使用HTTP的优点：" class="headerlink" title="使用HTTP的优点："></a>使用HTTP的优点：</h5><ul>
+<li>简单且大家都熟悉</li>
+<li>可使用浏览器扩展（如postman）或curl之类的命令来测试</li>
+<li>内置支持请求/响应模式的通信</li>
+<li>对防火墙友好</li>
+<li>不需要中间代理，简化系统架构</li>
+</ul>
+<h5 id="使用HTTP的缺点："><a href="#使用HTTP的缺点：" class="headerlink" title="使用HTTP的缺点："></a>使用HTTP的缺点：</h5><ul>
+<li>只支持请求/响应模式交互</li>
+<li>因为客户端与服务端直接通信，交互期间必须一直在线</li>
+<li>客户端必须知道每个服务实例的URL</li>
+</ul>
+<h4 id="Thrift："><a href="#Thrift：" class="headerlink" title="Thrift："></a>Thrift：</h4><p>&emsp;&emsp;Thrift是Facebook实现的一种高效的、支持多种编程语言的远程服务调用框架。</p>
+<p>&emsp;&emsp;Thrift可以返回响应，返回值的方法其实就是请求/响应类型交互模式的实现。</p>
+<p>&emsp;&emsp;Thrift可以对应于通知类型的交互模式，定义为单向的，此时服务端将不返回响应。</p>
+<h3 id="消息格式"><a href="#消息格式" class="headerlink" title="消息格式"></a>消息格式</h3><p>&emsp;&emsp;在进程间通信必须选择一个能跨语言的消息格式。有两类格式：</p>
+<ul>
+<li>文本：如JSON、XML<p class="li-explanation">&emsp;&emsp;这类格式的优点在于可读性强，而且是自描述的。缺点就是消息会变得冗长，以及解析文本的负担过大。</p></li>
+<li>二进制<p class="li-explanation">&emsp;&emsp;这类格式的优点在于解码速度更快，效率更高。缺点在于可读性差。</p>
+
+</li>
+</ul>
+<p><br><br>注释：<br><a name="RPC-explanation" href="#RPC">RPC：</a>Remote Procedure Call Protocol - 远程过程调用协议<br><a name="HATEOAS-explanation" href="#HATEOAS">HATEOAS：</a>HyperMedia As The Engine Of Application State - 超媒体作为应用状态的引擎</p>
+<p><br><br>参考链接：<br><a href="http://dockone.io/article/549" target="_blank" rel="external">微服务实战（三）：深入微服务架构的进程间通信</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;&amp;emsp;&amp;emsp;IPC即进程间通信（Inter-Porcess Communication）。微服务架构中有两类IPC机制可选：异步消息机制和同步请求/响应机制。
+    
+    </summary>
+    
+      <category term="技术" scheme="http://yantinglam.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="微服务" scheme="http://yantinglam.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>微服务架构中的API Gateway</title>
+    <link href="http://yantinglam.com/2016/12/15/Microservices-2016-12-15-API-Gateway-of-micro-service/"/>
+    <id>http://yantinglam.com/2016/12/15/Microservices-2016-12-15-API-Gateway-of-micro-service/</id>
+    <published>2016-12-15T06:07:08.000Z</published>
+    <updated>2017-01-05T07:02:22.000Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="什么是API-Gateway"><a href="#什么是API-Gateway" class="headerlink" title="什么是API Gateway?"></a>什么是API Gateway?</h3><p>&emsp;&emsp;API Gateway是客户端与微服务系统之间的中间件，是客户端访问微服务系统的唯一入口。<a id="more"></a>打个比方，将微服务系统比作一个守卫深严的机密图书馆，将客户端比作图书馆的来访人员，API Gateway就好比是图书馆管理员，这个图书馆里的图书只能由管理员来查阅，所以来访人员想要查询任何图书馆内的资料，都要经过管理员。</p>
+<p>&emsp;&emsp;来访人员（<strong>客户端</strong>）要想查询（<strong>访问</strong>）图书馆（<strong>微服务系统</strong>）里的某些资料（<strong>服务</strong>），就要先告诉管理员（<strong>API Gateway</strong>）他想要查询的信息是什么，然后由管理员去翻阅图书馆里的资料，有的可能翻阅一本资料就得到答案，有的可能需要翻阅好几本资料才能得到答案，但这个来访人员不需要知道。最后管理员整理好最终答案后告诉来访人员。</p>
+<p>&emsp;&emsp;在这个过程中，来访人员只需要关注两点：他想要查询的信息是什么以及他得到的最终答案是什么。来访人员不需要知道得到这个信息的查阅过程，这部分是由管理员来负责的。</p>
+<p>&emsp;&emsp;管理员需要懂得多方语言，才能读懂图书馆里各方语言的资料，也就是说API Gateway必须要有转换不同通讯协议的机制，以便与微服务系统中各个使用不同语言工具的服务进行通讯连接。</p>
+<p><img src="/images/Microservices/API-Gateway-of-micro-service/Model-of-API-Gateway.png" width="500" height="500"></p>
+<h3 id="API-Gateway的功能"><a href="#API-Gateway的功能" class="headerlink" title="API Gateway的功能"></a>API Gateway的功能</h3><ul>
+<li>授权机制<p class="li-explanation">&emsp;&emsp;管理员可以决定来访人员是否有资格进行信息查询。</p></li>
+<li>监控机制<p class="li-explanation">&emsp;&emsp;管理员可以知道图书馆里资料的使用情况。</p></li>
+<li>负载均衡<p class="li-explanation">&emsp;&emsp;管理员可以对图书馆里的资料进行分配使用。</p></li>
+<li>缓存<p class="li-explanation">&emsp;&emsp;管理员可以记住那些常被访问的资料内容，以便能快速回答来访人员的问题。</p></li>
+<li>请求分片和管理<p class="li-explanation">&emsp;&emsp;管理员可以将来访人员要查询的信息分好几次来进行查询。</p>
+
+</li>
+</ul>
+<h3 id="API-Gateway的优点"><a href="#API-Gateway的优点" class="headerlink" title="API Gateway的优点"></a>API Gateway的优点</h3><ul>
+<li>封装微服务系统的内部结构</li>
+<li>减少客户端与微服务系统的通讯次数</li>
+<li>使客户端不需要处理不同服务之间不同的通讯协议，简化客户端代码</li>
+</ul>
+<h3 id="API-Gateway的缺点"><a href="#API-Gateway的缺点" class="headerlink" title="API Gateway的缺点"></a>API Gateway的缺点</h3><ul>
+<li>API Gateway本身必须要是一个高可用的组件，所以对它的开发、部署和管理要求较高</li>
+<li>每次新增服务时，也需要更新API Gateway来支持新的服务</li>
+<li>API Gateway的更新方法越简单越好，否则开发者将因为更新API Gateway而要排队</li>
+</ul>
+<p><br><br>参考链接：<br><a href="http://dockone.io/article/482" target="_blank" rel="external">微服务实战（二）：使用API Gateway</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;什么是API-Gateway&quot;&gt;&lt;a href=&quot;#什么是API-Gateway&quot; class=&quot;headerlink&quot; title=&quot;什么是API Gateway?&quot;&gt;&lt;/a&gt;什么是API Gateway?&lt;/h3&gt;&lt;p&gt;&amp;emsp;&amp;emsp;API Gateway是客户端与微服务系统之间的中间件，是客户端访问微服务系统的唯一入口。
+    
+    </summary>
+    
+      <category term="技术" scheme="http://yantinglam.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="微服务" scheme="http://yantinglam.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>微服务架构的认识</title>
+    <link href="http://yantinglam.com/2016/12/14/Microservices-2016-12-14-Fundamentals-of-micro-service/"/>
+    <id>http://yantinglam.com/2016/12/14/Microservices-2016-12-14-Fundamentals-of-micro-service/</id>
+    <published>2016-12-14T06:07:08.000Z</published>
+    <updated>2017-01-05T07:02:18.000Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="什么是微服务？"><a href="#什么是微服务？" class="headerlink" title="什么是微服务？"></a>什么是微服务？</h3><p>&emsp;&emsp;微服务是一种架构风格，在这种架构中，由一个或多个微服务组成一个大型应用或软件。一个微服务代表着一个小的业务功能，各个微服务之间是松耦合的，通过<a href="#IPC-explanation" name="IPC">IPC</a>相互通信。单个微服务可以被独立部署。<br><a id="more"></a></p>
+<h3 id="微服务架构与单体式架构应用对比"><a href="#微服务架构与单体式架构应用对比" class="headerlink" title="微服务架构与单体式架构应用对比"></a>微服务架构与单体式架构应用对比</h3><table><tr><th></th><th>单体式</th><th>微服务</th><th></th></tr><tr><td>进程安排</td><td>将所有功能都放在一个进程中</td><td>将所有功能拆分为多个业务功能安排到多个服务进程中</td><td rowspan="2"><img src="/images/Microservices/Fundamentals-of-micro-service/Micro-service-and-single-mode-app1.png"></td></tr><tr><td>扩展方式</td><td>通过复制整个应用到多台服务器实现扩展</td><td>通过将不同的服务分布于不同的服务器，并按需复制服务实现扩展</td></tr><tr><td>数据管理</td><td>业务逻辑与数据进行分离，数据一般采用统一设计、统一管理的方式</td><td>将相关联的业务逻辑及数据放在一起形成独立的边界，每个服务管理自有的数据库，每个数据库可以根据该服务的需求有自己的设计</td><td><img src="/images/Microservices/Fundamentals-of-micro-service/Micro-service-and-single-mode-app2.png"></td></tr><tr><td>团队结构</td><td>按功能进行组织，如UI界面设计的一组，数据库的一组，中间件的一组…</td><td>跨功能进行组织，既有UI界面的，也有数据库的，还有中间件的…通常团队不会太大</td><td rowspan="2"><img src="/images/Microservices/Fundamentals-of-micro-service/Micro-service-and-single-mode-app3.png"></td></tr><tr><td>开发及运维方式</td><td>以项目模式开发完整的应用，开发完成后交付给运维团队负责维护</td><td>倡导一个团队负责一个“微服务”的完整生命周期，倡导“谁开发、谁运维”的开发运维一体化</td></tr><tr><td>技术平台</td><td>采用单一的技术平台，如一个单体式应用一般只采用一种编程语言</td><td>鼓励使用合适的工具完成各自的任务，可以选用各自最佳的工具，如不同的编程语言</td><td></td></tr></table>
+
+<p><br></p>
+<h3 id="微服务架构与SOA架构对比"><a href="#微服务架构与SOA架构对比" class="headerlink" title="微服务架构与SOA架构对比"></a>微服务架构与<a href="#SOA-explanation" name="SOA">SOA</a>架构对比</h3><table><tr><th></th><th>微服务</th><th>SOA</th></tr><tr><td>相同点</td><td colspan="2"><ul><li>以服务为核心</li><li>强调敏捷及快速推出市场</li></ul></td></tr><tr><td>差异点</td><td><ul><li>强调如何将一个整体的应用拆分成多个可独立部署的服务进程，并通过开放编程语言及数据持久化等措施最大化交付的速度</li><li>强调的“智能端点与管道扁平化”特性与<a href="#ESB-explanation" name="ESB">SOA</a>背道而驰</li><li>利用许多大型组织中应用的新技术与经验，尽可能使用简单的通讯协议如RESTful API</li></ul></td><td><ul><li>SOA内涵广泛，但主要场景包括应用系统的资产重用服务化、通过<a href="#BPM-explanation" name="BPM">BPM</a>实现服务编排，通过ESB实现不同应用的集成</li><li>SOA以Web Service/BPM/ESB等技术为主相对而言显得复杂些</li><li>SOA试图通过ESB隐藏集成的复杂性，却花费巨资而没有体现出价值性</li><li>过度集中管控而抑制了个性化变更</li></ul></td></tr></table>
+
+<p><br></p>
+<h3 id="为什么要使用微服务架构"><a href="#为什么要使用微服务架构" class="headerlink" title="为什么要使用微服务架构"></a>为什么要使用微服务架构</h3><h4 id="微服务的优点"><a href="#微服务的优点" class="headerlink" title="微服务的优点"></a>微服务的优点</h4><ul>
+<li>微服务架构是松耦合的，每个服务相对比较简单，只关注一个业功能务，可以提供更高的灵活性</li>
+<li>微服务架构中的每个服务可由不同的团队独立开发，可根据自身业务选用适用的编程语言与工具进行开发，更能够有针对性地解决问题</li>
+<li>每个服务可独立部署，这样可以加快部署，加快推出市场的速度</li>
+<li>使用微服务，可以频繁地发布不同服务的同时保持系统其他服务的可用性和稳定性</li>
+</ul>
+<h4 id="微服务的缺点"><a href="#微服务的缺点" class="headerlink" title="微服务的缺点"></a>微服务的缺点</h4><ul>
+<li>进程间通讯机制带来的挑战<p class="li-explanation">&emsp;&emsp;需要在RPC或者消息传递之间选择并完成进程间通讯，需要处理消息传递中速度过慢或者不可用等局部失效问题。</p></li>
+<li>分区数据库带来的挑战<p class="li-explanation">&emsp;&emsp;需要更新不同服务所使用的不同数据库，需要处理不同服务之间的数据访问问题。</p></li>
+<li>测试难度提高<p class="li-explanation">&emsp;&emsp;测试一个服务需要启动和它有关的所有服务，而且在动态环境下，服务间的交互会产生非常微妙的行为，对于这种行为难以可视化及全面测试。</p></li>
+<li>开发及运维成本有所增加<p class="li-explanation">&emsp;&emsp;微服务架构下可能要构建、开发、测试、部署、运行数十个甚至上百个独立的服务，并可能需要支持多种语言和环境，而且开发人员必须要有DevOps开发运维一体化的技能，这些都可能带来成本的增加。</p></li>
+<li>代码冗余<p class="li-explanation">&emsp;&emsp;某些底层功能需要被多个服务所用，为了避免“同步耦合引入到系统中”，有时需要向不同的服务添加一些代码，这就会导致代码重复。</p></li>
+<li>服务间的协调问题<p class="li-explanation">&emsp;&emsp;把系统分为多个服务组件之后，会产生新的接口，这意味着简单的交叉变化可能需要改变很多组件，比如，假设在一个案例中，需要修改服务A、B、C，而A依赖B，B依赖C，微服务架构模式就需要考虑相关改变对不同服务的影响，就需要更新服务C，然后是B，最后才是A。在实际应用环境中，一个新品发布可能被迫同时发布大量服务，由于集成点的大量增加，微服务架构会有更高的发布风险。</p>
+
+</li>
+</ul>
+<p>任何事情都有两面性，微服务架构也会有其优缺点，是否需要使用微服务架构，还是要根据项目本身的需求进行考虑。</p>
+<p><br><br>注解：<br><a name="IPC-explanation" href="#IPC">IPC：</a>Inter-Process Communication - 进程间通信<br><a name="SOA-explanation" href="#SOA">SOA：</a>Service-Oriented Architecture - 面向服务的体系结构<br><a name="ESB-explanation" href="#ESB">ESB：</a>Enterprise Service Bus - 企业服务总线<br><a name="BPM-explanation" href="#BPM">BPM：</a>Business Process Management - 业务流程管理</p>
+<p><br><br>参考链接：<br><a href="https://www.ibm.com/developerworks/community/blogs/3302cc3b-074e-44da-90b1-5055f1dc0d9c/entry/%E8%A7%A3%E6%9E%90%E5%BE%AE%E6%9C%8D%E5%8A%A1%E6%9E%B6%E6%9E%84_%E4%B8%80_%E4%BB%80%E4%B9%88%E6%98%AF%E5%BE%AE%E6%9C%8D%E5%8A%A1?lang=en" target="_blank" rel="external">解析微服务架构(一)：什么是微服务</a><br><a href="http://dockone.io/article/394" target="_blank" rel="external">微服务实战（一）：微服务架构的优势与不足</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;什么是微服务？&quot;&gt;&lt;a href=&quot;#什么是微服务？&quot; class=&quot;headerlink&quot; title=&quot;什么是微服务？&quot;&gt;&lt;/a&gt;什么是微服务？&lt;/h3&gt;&lt;p&gt;&amp;emsp;&amp;emsp;微服务是一种架构风格，在这种架构中，由一个或多个微服务组成一个大型应用或软件。一个微服务代表着一个小的业务功能，各个微服务之间是松耦合的，通过&lt;a href=&quot;#IPC-explanation&quot; name=&quot;IPC&quot;&gt;IPC&lt;/a&gt;相互通信。单个微服务可以被独立部署。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="技术" scheme="http://yantinglam.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="微服务" scheme="http://yantinglam.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>分布式集群</title>
+    <link href="http://yantinglam.com/2016/12/13/Distrubited-2016-12-13-Distributed-cluster/"/>
+    <id>http://yantinglam.com/2016/12/13/Distrubited-2016-12-13-Distributed-cluster/</id>
+    <published>2016-12-13T06:00:00.000Z</published>
+    <updated>2016-12-18T01:54:59.000Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="什么是分布式集群？"><a href="#什么是分布式集群？" class="headerlink" title="什么是分布式集群？"></a>什么是分布式集群？</h3><p>&emsp;&emsp;首先看看分布式与集群之间的区别与联系：</p>
+<ul>
+<li>分布式是指将不同的业务分布在不同的地方；而集群是指将同一个业务部署到多台机器上</li>
+<li>分布式的组织比较松散；而集群有一定的组织</li>
+<li>分布式每一个节点完成不同的业务，一旦一个节点宕掉了，在这个节点上的业务就不可访问了；而集群里一旦某一台服务器宕掉了，其他的服务器可以顶上来</li>
+<li>分布式的每一个节点都可以做成一个集群<a id="more"></a>
+</li>
+</ul>
+<p>&emsp;&emsp;所以分布式集群就是结合了分布式与集群的特征，相互取长补短，构建一个更加高效可用的系统模型。</p>
+<h3 id="为什么要使用分布式集群？"><a href="#为什么要使用分布式集群？" class="headerlink" title="为什么要使用分布式集群？"></a>为什么要使用分布式集群？</h3><p>&emsp;&emsp;在实例生产中，单独使用分布式或单独使用集群的意义都不太大，分布式解决了应用服务业务或功能上的松耦合，但不能保证系统的高可靠性；而集群解决了应用服务处理高并发的能力，但不能很好的做应用服务的业务层扩展。所以分布式与集群应该是相辅相成、相互合作的关系。</p>
+<h3 id="如何使用分布式集群？"><a href="#如何使用分布式集群？" class="headerlink" title="如何使用分布式集群？"></a>如何使用分布式集群？</h3><p>&emsp;&emsp;在设计分布式集群系统的时候要注意以下几点：</p>
+<ul>
+<li><p>减少网络通信的开销</p>
+<p class="li-explanation">&emsp;&emsp;因为分布式集群的各个服务器之间的通信是通过网络进行，所以网络是分布式集群的一个必要条件。而目前网络的传输速度还赶不上CPU读取内存或硬盘的速度，这会成为系统性能提升的一个瓶颈点。为了减少这方面带来的影响，在设计上应该减少各个业务或功能模块之间不太必要的通信。</p>
+</li>
+<li><p>将应用做成无状态的</p>
+<p class="li-explanation">&emsp;&emsp;首先搞清楚应用服务的状态指的是运行时程序因处理服务请求而存在内存里的数据。为什么要设计成无状态呢？是由于用户发起请求是对某一台服务器发起请求的，而这些用户请求信息只会存在于该台服务器上，如果此时该台服务器出现故障宕掉了，虽然其他服务器可以顶上代替该台服务器让应用继续运行，但是保存在故障服务器上的用户请求数据必然导致丢失，这就违背了高可靠的特性了。</p>
+
+</li>
+</ul>
+<h3 id="使用分布式集群应该注意的地方"><a href="#使用分布式集群应该注意的地方" class="headerlink" title="使用分布式集群应该注意的地方"></a>使用分布式集群应该注意的地方</h3><ul>
+<li>网络性能的瓶颈</li>
+<li>服务器数量越多，宕机的概率就越大</li>
+<li>数据一致性的处理<p class="li-explanation">&emsp;&emsp;因为在数据库的集群搭建是将多个数据备份部署到多个服务器上面，那么如何同步各个服务器之间的数据，让它们保持一致性就是一个必须要考虑的问题。</p>
+
+</li>
+</ul>
+<h3 id="分布式集群的设计原则"><a href="#分布式集群的设计原则" class="headerlink" title="分布式集群的设计原则"></a>分布式集群的设计原则</h3><p>&emsp;&emsp;分布式集群的设计遵循CAP理论。所谓CAP理论是一个分布式系统最多只能同时满足数据一致性（Consistency）、可用性（Availability）、分区容错性（Partition tolerance）这三项中的两项。</p>
+<h4 id="数据一致性的解决方案"><a href="#数据一致性的解决方案" class="headerlink" title="数据一致性的解决方案"></a>数据一致性的解决方案</h4><ul>
+<li>强一致性：更新过的数据都能被后续的访问看到</li>
+<li>弱一致性：能容忍后续的部分或全部访问看不到</li>
+<li>最终一致性：经过一段时间后能访问到</li>
+</ul>
+<h4 id="数据可用性"><a href="#数据可用性" class="headerlink" title="数据可用性"></a>数据可用性</h4><p>&emsp;&emsp;数据可用性是指对数据的读与写永远有效，这与数据冗余和负载均衡有着很大的联系。</p>
+<h4 id="分区容错性"><a href="#分区容错性" class="headerlink" title="分区容错性"></a>分区容错性</h4><p>&emsp;&emsp;分区容错性是指分布式系统在遇到某节点或分区出现故障时，仍然能对外提供一致性和可用性的服务。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;什么是分布式集群？&quot;&gt;&lt;a href=&quot;#什么是分布式集群？&quot; class=&quot;headerlink&quot; title=&quot;什么是分布式集群？&quot;&gt;&lt;/a&gt;什么是分布式集群？&lt;/h3&gt;&lt;p&gt;&amp;emsp;&amp;emsp;首先看看分布式与集群之间的区别与联系：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;分布式是指将不同的业务分布在不同的地方；而集群是指将同一个业务部署到多台机器上&lt;/li&gt;
+&lt;li&gt;分布式的组织比较松散；而集群有一定的组织&lt;/li&gt;
+&lt;li&gt;分布式每一个节点完成不同的业务，一旦一个节点宕掉了，在这个节点上的业务就不可访问了；而集群里一旦某一台服务器宕掉了，其他的服务器可以顶上来&lt;/li&gt;
+&lt;li&gt;分布式的每一个节点都可以做成一个集群
+    
+    </summary>
+    
+      <category term="技术" scheme="http://yantinglam.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="分布式" scheme="http://yantinglam.com/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>集群</title>
+    <link href="http://yantinglam.com/2016/12/13/Distrubited-2016-12-13-Cluster/"/>
+    <id>http://yantinglam.com/2016/12/13/Distrubited-2016-12-13-Cluster/</id>
+    <published>2016-12-13T03:00:00.000Z</published>
+    <updated>2016-12-18T01:54:16.000Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="什么是集群？"><a href="#什么是集群？" class="headerlink" title="什么是集群？"></a>什么是集群？</h3><p>&emsp;&emsp;集群是指在多台不同的服务器中部署相同的应用或服务模块，构成一个集群，通过负载均衡设备对外提供服务。</p>
+<h3 id="为什么要用集群？"><a href="#为什么要用集群？" class="headerlink" title="为什么要用集群？"></a>为什么要用集群？</h3><p>&emsp;&emsp;通过集群可以在低成本的情况下获得在性能、可靠性、灵活性方面的相对较高的收益。<br><a id="more"></a></p>
+<h4 id="集群要具有的能力"><a href="#集群要具有的能力" class="headerlink" title="集群要具有的能力"></a>集群要具有的能力</h4><ul>
+<li><p>负载均衡的能力</p>
+<p class="li-explanation">&emsp;&emsp;把任务比较均匀的分布到集群环境下的各种资源，以提高数据的吞吐量，还能减少单个服务器的负载压力，提高并发处理能力。</p>
+</li>
+<li><p>可实现高可靠性</p>
+<p class="li-explanation">&emsp;&emsp;集群在硬件方面对服务器的要求并不高，甚至允许单台服务器出现故障的情况。这些故障的可能通过软件方面进行容错处理，以此来实现高可靠性。</p>
+</li>
+<li><p>错误恢复能力</p>
+<p class="li-explanation">&emsp;&emsp;这是实现高可靠性的技术支持。如果集群中的某一台服务器由于故障或维护需要而无法使用时，资源和应用程序将转移到可用的节点上，使系统不会因为某个节点的故障而停止动作，从而实现高可靠性。</p>
+</li>
+<li><p>高性价比</p>
+<p class="li-explanation">&emsp;&emsp;有了负载匀称的能力，所以集群对单台服务器的性能要求不高，通常会选择使用一些中低端的普通计算机来组成一个集群，而且还能让系统的性能达到甚至超越昂贵大型主机的性能。</p>
+
+</li>
+</ul>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;什么是集群？&quot;&gt;&lt;a href=&quot;#什么是集群？&quot; class=&quot;headerlink&quot; title=&quot;什么是集群？&quot;&gt;&lt;/a&gt;什么是集群？&lt;/h3&gt;&lt;p&gt;&amp;emsp;&amp;emsp;集群是指在多台不同的服务器中部署相同的应用或服务模块，构成一个集群，通过负载均衡设备对外提供服务。&lt;/p&gt;
+&lt;h3 id=&quot;为什么要用集群？&quot;&gt;&lt;a href=&quot;#为什么要用集群？&quot; class=&quot;headerlink&quot; title=&quot;为什么要用集群？&quot;&gt;&lt;/a&gt;为什么要用集群？&lt;/h3&gt;&lt;p&gt;&amp;emsp;&amp;emsp;通过集群可以在低成本的情况下获得在性能、可靠性、灵活性方面的相对较高的收益。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="技术" scheme="http://yantinglam.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="分布式" scheme="http://yantinglam.com/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>分布式</title>
+    <link href="http://yantinglam.com/2016/12/13/Distrubited-2016-12-13-Distributed/"/>
+    <id>http://yantinglam.com/2016/12/13/Distrubited-2016-12-13-Distributed/</id>
+    <published>2016-12-13T02:30:00.000Z</published>
+    <updated>2016-12-18T01:53:31.000Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="什么是分布式？"><a href="#什么是分布式？" class="headerlink" title="什么是分布式？"></a>什么是分布式？</h3><p>&emsp;&emsp;分布式是指在多台不同的服务器中部署不同的服务模块，通过远程调用协同工作，对外提供服务。</p>
+<h3 id="为什么要用分布式？"><a href="#为什么要用分布式？" class="headerlink" title="为什么要用分布式？"></a>为什么要用分布式？</h3><p>&emsp;&emsp;要理解为什么要使用分布式，首先来了解一下<strong>集中式系统</strong>。</p>
+<p>&emsp;&emsp;集中式系统简单来说就是将一个应用和服务都部署在一台服务器上，整个应用和服务的业务功能都在这台服务器上完成。这种结构在应用和服务的部署上面非常简单，只需要将应用的运行实例安装到一台服务器上就可以了。<br><a id="more"></a><br>&emsp;&emsp;那么这种集中式系统有什么不好的地方呢？</p>
+<ul>
+<li><p>系统大而复杂。</p>
+<p class="li-explanation">&emsp;&emsp;整个应用和服务做成一块，如果该应用比较小，功能比较简单时问题还不太突出。当应用的业务不断扩大，功能不断增多时，整个应用必然会越做越大，最后整个系统变得十分大且复杂，还会显得很臃肿。</p>
+</li>
+<li><p>运行、维护成本高</p>
+<p class="li-explanation">&emsp;&emsp;一个应用设计得太庞大太复杂，就会增加开发以及维护成本，而且要运行一个庞大的应用，对服务器的性能要求就很高，一般需要像IBM、HP等厂商生产的昂贵大型主机。</p>
+</li>
+<li><p>扩展性差</p>
+<p class="li-explanation">&emsp;&emsp;在新业务新功能的增加上面，由于代码量大且结构复杂，阅读、修改代码的工作量就会很大；另外在性能的提升上面要提升系统的性能，更多的要提升服务器的硬件性能，但硬件方面的性能上限很快就会到达，要想在此之前继续提升就会变得很困难。</p>
+</li>
+<li><p>容易发生单点故障</p>
+<p class="li-explanation">&emsp;&emsp;因为整个系统集中部署在一台服务器上，一旦这台服务器发生故障，则会导致整个应用系统瘫痪。</p>
+
+</li>
+</ul>
+<p>&emsp;&emsp;分布式就是为了解决上述问题而出现的。</p>
+<h3 id="分布式的优点"><a href="#分布式的优点" class="headerlink" title="分布式的优点"></a>分布式的优点</h3><ul>
+<li>将系统进行分层分割，将不同的业务或功能模块部署到不同的服务器上，使整个应用的结构更加清晰明了</li>
+<li>将一些复杂的功能或计算进行分解部署，可以节约整体的处理时间，提升系统性能</li>
+<li>可以使应用从服务层面进行弹性扩展，降低开发与维护的成本<p class="li-explanation">&emsp;&emsp;每个模块处理不同的业务，有不同的功能，对外开放制定好的API，其他业务或功能要想与之通讯，则按照这些API规则进行，这样新增业务或功能时，不需要理解其他模块的内部实现，只需要对接那些开放的API与它们进行通信即可。</p>
+
+</li>
+</ul>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;什么是分布式？&quot;&gt;&lt;a href=&quot;#什么是分布式？&quot; class=&quot;headerlink&quot; title=&quot;什么是分布式？&quot;&gt;&lt;/a&gt;什么是分布式？&lt;/h3&gt;&lt;p&gt;&amp;emsp;&amp;emsp;分布式是指在多台不同的服务器中部署不同的服务模块，通过远程调用协同工作，对外提供服务。&lt;/p&gt;
+&lt;h3 id=&quot;为什么要用分布式？&quot;&gt;&lt;a href=&quot;#为什么要用分布式？&quot; class=&quot;headerlink&quot; title=&quot;为什么要用分布式？&quot;&gt;&lt;/a&gt;为什么要用分布式？&lt;/h3&gt;&lt;p&gt;&amp;emsp;&amp;emsp;要理解为什么要使用分布式，首先来了解一下&lt;strong&gt;集中式系统&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;&amp;emsp;&amp;emsp;集中式系统简单来说就是将一个应用和服务都部署在一台服务器上，整个应用和服务的业务功能都在这台服务器上完成。这种结构在应用和服务的部署上面非常简单，只需要将应用的运行实例安装到一台服务器上就可以了。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="技术" scheme="http://yantinglam.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="分布式" scheme="http://yantinglam.com/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>安装hexo-renderer-sass失败</title>
+    <link href="http://yantinglam.com/2016/11/23/hexo-2016-11-23-Fail-to-install-hexo-renderer-sass/"/>
+    <id>http://yantinglam.com/2016/11/23/hexo-2016-11-23-Fail-to-install-hexo-renderer-sass/</id>
+    <published>2016-11-23T07:39:25.000Z</published>
+    <updated>2016-12-18T01:52:28.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>在使用hexo做github博客的时候，找到一些很简洁的主题想要使用，其中有些主题需要安装hexo-render-sass来渲染页面布局，此时遇到了错误：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">build error! Stack Error: ‘c:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe failed with <span class="built_in">exit</span> code:1......</div></pre></td></tr></table></figure></p>
+<a id="more"></a>
+<p>在Google上找了一下，有人说是国内网络造成的问题，可以使用淘宝npm镜像解决。淘宝镜像的使用方法：通过config命令指定镜像<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ npm install -g cnpm --registry=http://registry.npm.taobao.org</div></pre></td></tr></table></figure></p>
+<p>成为指定镜像后，使用cnpm install –save hexo-renderer-sass命令重新安装，即可成功。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;在使用hexo做github博客的时候，找到一些很简洁的主题想要使用，其中有些主题需要安装hexo-render-sass来渲染页面布局，此时遇到了错误：&lt;br&gt;&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;1&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;build error! Stack Error: ‘c:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe failed with &lt;span class=&quot;built_in&quot;&gt;exit&lt;/span&gt; code:1......&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="技术" scheme="http://yantinglam.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="hexo" scheme="http://yantinglam.com/tags/hexo/"/>
+    
+  </entry>
+  
+</feed>

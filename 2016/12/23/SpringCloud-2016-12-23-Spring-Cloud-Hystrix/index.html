@@ -1,0 +1,230 @@
+<!DOCTYPE html><html lang="zh-cn"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="author" content="Yanting Lam"><meta name="description" content="&amp;emsp;&amp;emsp;在微服务架构中，是将一个个业务功能拆分成一个个小的服务，各个服务之间通过IPC机制进行通信，因此有可能因为网络故障或依赖服务自身问题出现延迟或调用故障。若此时调用方不断增加请求，最后就会出现因等待依赖服务响应而造成任务积压，最终导致自身服务的瘫痪。为了解决"><meta name="keywords" content="微服务,Spring Cloud"><title>Spring-Cloud - 断路器 · Yanting Lam</title><link rel="icon" href="/favicon.ico"><link rel="canonical" href="http://yantinglam.com/2016/12/23/SpringCloud-2016-12-23-Spring-Cloud-Hystrix/"><link rel="alternate" href="/atom.xml" title="Yanting Lam"><link rel="stylesheet" href="/css/style.css"><script type="text/javascript">var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?8e7c7417ad2e322a37d13dc7cdc5454e";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script><script src="https://cdn1.lncld.net/static/js/av-min-1.2.1.js"></script><script type="text/javascript">AV.initialize("h9D4obRhn4aqzazLSG9Kxa2k-gzGzoHsz", "pRL4WjJEgaARQXXRWHLXbBgw")</script></head><body><div id="main"><header><a href="/." class="logo">Yanting Lam</a><ul class="nav"><li class="nav-link"><a href="/" target="_self">首页</a></li><li class="nav-link"><a href="/archives/" target="_self">归档</a></li><li class="nav-link"><a href="/tags/" target="_self">标签</a></li><li class="nav-link"><a href="/photography/" target="_self">摄影集</a></li></ul></header><section id="container"><article class="post"><h1 class="post-title">Spring-Cloud - 断路器</h1><p class="post-meta"><span class="post-time">发表于 2016-12-23</span><span id="/2016/12/23/SpringCloud-2016-12-23-Spring-Cloud-Hystrix/" data-flag-title="Spring-Cloud - 断路器" class="leancloud-visitors"><span class="leancloud-visitors-text">阅读次数 </span><span class="leancloud-visitors-count"></span></span></p><div id="sidebar" class="post-sidebar"><h3 class="heading">目录</h3><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#什么是断路器？"><span class="toc-text">什么是断路器？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Spring-Cloud的断路器实现"><span class="toc-text">Spring Cloud的断路器实现</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Hystrix的实现"><span class="toc-text">Hystrix的实现</span></a></li></ol></div><div class="post-content"><p>&emsp;&emsp;在微服务架构中，是将一个个业务功能拆分成一个个小的服务，各个服务之间通过IPC机制进行通信，因此有可能因为网络故障或依赖服务自身问题出现延迟或调用故障。若此时调用方不断增加请求，最后就会出现因等待依赖服务响应而造成任务积压，最终导致自身服务的瘫痪。为了解决这个问题，Spring Cloud给出了断路器模式。<br><a id="more"></a></p>
+<h3 id="什么是断路器？"><a href="#什么是断路器？" class="headerlink" title="什么是断路器？"></a>什么是断路器？</h3><p>&emsp;&emsp;断路器的概念原本是应用在电路上的，断路器是一种开关装置，用于保护线路过载。当电路中有电器发生短路，断路器能及时切断故障电路，避免发生过载、过热甚至起火等严重后果。</p>
+<p>&emsp;&emsp;在微服务架构中，断路器也起到了一个类似这样的作用。当某个服务发生故障时，通过断路器的故障监控，向调用方返回一个设定的错误响应，以防止调用方长期等待。这样可以避免线程因服务故障而被长期占用不能释放，从而避免故障蔓延。</p>
+<h3 id="Spring-Cloud的断路器实现"><a href="#Spring-Cloud的断路器实现" class="headerlink" title="Spring Cloud的断路器实现"></a>Spring Cloud的断路器实现</h3><p>&emsp;&emsp;在Spring Cloud中，使用Hystrix来实现断路器的功能。Hystrix旨在通过控制那些访问远程系统、服务和第三方库的节点，从而对延迟和故障提供更强大的容错能力。</p>
+<h3 id="Hystrix的实现"><a href="#Hystrix的实现" class="headerlink" title="Hystrix的实现"></a>Hystrix的实现</h3><p>&emsp;&emsp;这里需要用到前面<a href="/2016/12/20/Spring-Cloud-service-discovery/index.html">服务注册与消费</a>的例子。</p>
+<p>&emsp;&emsp;依次启动注册中心服务，compute-service服务以及Ribbon客户端服务，并访问<a href="http://localhost:3333/add" target="_blank" rel="external">http://localhost:3333/add</a> ,此时可以看到页面返回计算结果30。现在通过关闭compute-service来模拟服务出现故障的情况，关闭compute-service服务之后，再次访问<a href="http://localhost:3333/add" target="_blank" rel="external">http://localhost:3333/add</a> ，会得到如下图所页的错误提示：</p>
+<p><img src="/images/SpringCloud/Spring-Cloud-Hystrix/Compute-service-error.png" width="500" height="300"></p>
+<p>&emsp;&emsp;接下来修改Ribbon客户端来增加Hystrix功能。<br>1.加入Hystrix依赖。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-hystrix<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div></pre></td></tr></table></figure>
+<p>2.向主入口程序添加@EnableCircuitBreaker注解开启断路器功能。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@SpringBootApplication</span></div><div class="line"><span class="meta">@EnableDiscoveryClient</span></div><div class="line"><span class="meta">@EnableCircuitBreakeraker</span> <span class="comment">//开启Hystrix</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RibbonApplication</span> </span>&#123;</div><div class="line"></div><div class="line">	<span class="meta">@Bean</span></div><div class="line">	<span class="meta">@LoadBalanced</span></div><div class="line">	<span class="function">RestTemplate <span class="title">restTemplate</span><span class="params">()</span> </span>&#123;</div><div class="line">		<span class="keyword">return</span> <span class="keyword">new</span> RestTemplate();</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</div><div class="line">		SpringApplication.run(RibbonApplication.class, args);</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>3.在服务消费方法上添加@HystrixCommand注解来指定失败回调方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@Service</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ComputeService</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="meta">@Autowired</span></div><div class="line">    RestTemplate restTemplate;</div><div class="line"></div><div class="line">    <span class="meta">@HystrixCommand</span>(fallbackMethod = <span class="string">"addServiceFallback"</span>)</div><div class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">addService</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> restTemplate.getForEntity(<span class="string">"http://COMPUTE-SERVICE/add?a=10&amp;b=20"</span>, String.class).getBody();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">addServiceFallback</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> <span class="string">"error"</span>;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>此例子中指定失败回调方法为addServiceFallback()，该方法返回字符串”error” </li>
+</ul>
+<p>4.重启Ribbon服务，再次访问<a href="http://localhost:4444/add" target="_blank" rel="external">http://localhost:4444/add</a> ，此时得到返回的错误字符串”error”。<br><img src="/images/SpringCloud/Spring-Cloud-Hystrix/Compute-service-errorFallback.png" width="500" height="300"></p>
+<p><br><br>参考链接：<br><a href="http://blog.didispace.com/springcloud3/" target="_blank" rel="external">Spring Cloud构建微服务架构（三）断路器</a></p>
+</div></article><div class="tags"><a href="/tags/微服务/">微服务</a><a href="/tags/Spring-Cloud/">Spring Cloud</a></div><div class="paginator"><a href="/2016/12/28/SpringCloud-2016-12-28-Spring-Cloud-Feign/" class="prev"><i class="iconfont icon-left"></i><span> 上一页</span></a><a href="/2016/12/21/Seven-years-is-a-life-2016-12-21-Compound-interest/" class="next"><span>下一页</span><i class="iconfont icon-right"></i></a></div><section id="comments"><div data-thread-key="http://yantinglam.com/2016/12/23/SpringCloud-2016-12-23-Spring-Cloud-Hystrix/index.html" data-title="Spring-Cloud - 断路器" data-url="http://yantinglam.com/2016/12/23/SpringCloud-2016-12-23-Spring-Cloud-Hystrix/index.html" class="ds-thread"></div><script type="text/javascript">var duoshuoQuery = {short_name: "yantinglam" };
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();</script></section></section><footer><div class="social"><a href="mailto:linyantingly@163.com" title="email" class="iconfont icon-email"></a><a href="https://github.com/yantinglam" title="github" class="iconfont icon-github"></a><a href="/atom.xml" title="rss" class="iconfont icon-rss"></a></div><div class="friendly-links"><h6 class="friendly-links-text">友情链接</h6><a href="http://davidleee.com/" class="friendly-links-url">David Lee(IOS工程师)</a></div><div class="copyright"><p class="power">Powered by <a href="https://hexo.io/">Hexo</a> and Theme by <a href="https://github.com/ahonn/hexo-theme-even"> Even</a></p><p class="since">&copy;2017<span class="heart"><i class="iconfont icon-heart"></i></span><span class="author">Yanting Lam</span></p><p class="calculate"><script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次</span></p></div><div id="back2top"><i class="iconfont icon-up"></i></div></footer></div><script src="/js/zepto.min.js"></script><script src="/js/theme.js"></script><script type="text/javascript">function showPostTime(Counter) {
+    var query = new AV.Query(Counter);
+    var entries = [];
+    var $visitors = $(".leancloud-visitors");
+
+    $visitors.each(function () {
+      entries.push( $(this).attr("id").trim() );
+    });
+
+    query.containedIn('url', entries);
+    query.find()
+      .done(function (results) {
+        var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+        $visitors.find(COUNT_CONTAINER_REF).text(0);
+
+        for (var i = 0; i < results.length; i++) {
+          var item = results[i];
+          var url = item.get('url');
+          var time = item.get('time');
+          var element = document.getElementById(url);
+
+          $(element).find(COUNT_CONTAINER_REF).text(time);
+        }
+      })
+      .fail(function (object, error) {
+        console.log("Error: " + error.code + " " + error.message);
+      });
+  }
+
+  function addPostCount(Counter) {
+    var $visitors = $(".leancloud-visitors");
+    var url = $visitors.attr('id').trim();
+    var title = $visitors.attr('data-flag-title').trim();
+    var query = new AV.Query(Counter);
+
+    query.equalTo("url", url);
+    query.find({
+      success: function(results) {
+        if (results.length > 0) {
+          var counter = results[0];
+          counter.fetchWhenSave(true);
+          counter.increment("time");
+          counter.save(null, {
+            success: function(counter) {
+              var $element = $(document.getElementById(url));
+              $element.find('.leancloud-visitors-count').text(counter.get('time'));
+            },
+            error: function(counter, error) {
+              console.log('Failed to save Visitor num, with error message: ' + error.message);
+            }
+          });
+        } else {
+          var newcounter = new Counter();
+          newcounter.set("title", title);
+          newcounter.set("url", url);
+          newcounter.set("time", 1);
+          newcounter.save(null, {
+            success: function(newcounter) {
+              var $element = $(document.getElementById(url));
+              $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+            },
+            error: function(newcounter, error) {
+              console.log('Failed to create');
+            }
+          });
+        }
+      },
+      error: function(error) {
+        console.log('Error:' + error.code + " " + error.message);
+      }
+    });
+  }
+
+  $(function() {
+    var Counter = AV.Object.extend("Counter");
+    if ($('.leancloud-visitors').length == 1) {
+      addPostCount(Counter);
+    } else if ($('.post-link').length > 1) {
+      showPostTime(Counter);
+    }
+  });
+</script><script type="text/javascript">function showLikeTime() {
+  //- var LikeCounter = AV.Object.extend("LikeCounter");
+  var query = new AV.Query("LikeCounter");
+  var entries = [];
+  var $like = $(".photo-meta");
+
+  $like.each(function () {
+    entries.push( $(this).attr("id").trim() );
+  });
+
+  query.find()
+    .done(function (results) {
+      console.log(results);
+      var COUNT_CONTAINER_REF = '.like-num';
+
+      $like.find(COUNT_CONTAINER_REF).text(0);
+
+      for (var i = 0; i < results.length; i++) {
+        var item = results[i];
+        var name = item.get('name');
+        var time = item.get('time');
+        var element = document.getElementById(name);
+
+        $(element).find(COUNT_CONTAINER_REF).text(time);
+      }
+    })
+    .fail(function (object, error) {
+      console.log("Error: " + error.code + " " + error.message);
+    });
+}
+
+function addLikeCount(name) {
+  var LikeCounter = AV.Object.extend("LikeCounter");
+  var query = new AV.Query(LikeCounter);
+
+  query.equalTo("name", name);
+  query.find({
+    success: function(results) {
+      console.log(results);
+      if (results.length > 0) {
+        var counter = results[0];
+        counter.fetchWhenSave(true);
+        counter.increment("time");
+        counter.save(null, {
+          success: function(counter) {
+            var $element = $(document.getElementById(name));
+            $element.find('.like-num').text(counter.get('time'));
+          },
+          error: function(counter, error) {
+            console.log('Failed to save Visitor num, with error message: ' + error.message);
+          }
+        });
+      } else {
+        var newcounter = new LikeCounter();
+        newcounter.set("name", name);
+        newcounter.set("time", 1);
+        newcounter.save(null, {
+          success: function(newcounter) {
+            var $element = $(document.getElementById(name));
+            $element.find('.like-num').text(newcounter.get('time'));
+          },
+          error: function(newcounter, error) {
+            console.log('Failed to create');
+          }
+        });
+      }
+    },
+    error: function(error) {
+      console.log('Error:' + error.code + " " + error.message);
+    }
+  });
+}
+
+function deleteLikeCount(name) {
+  var LikeCounter = AV.Object.extend("LikeCounter");
+  var query = new AV.Query(LikeCounter);
+
+  query.equalTo("name", name);
+  query.find({
+    success: function(results) {
+      console.log(results);
+      if (results.length > 0) {
+        var counter = results[0];
+        counter.fetchWhenSave(true);
+        counter.increment("time", -1);
+        counter.save(null, {
+          success: function(counter) {
+            var $element = $(document.getElementById(name));
+            $element.find('.like-num').text(counter.get('time'));
+          },
+          error: function(counter, error) {
+            console.log('Failed to save Visitor num, with error message: ' + error.message);
+          }
+        });
+      }
+    },
+    error: function(error) {
+      console.log('Error:' + error.code + " " + error.message);
+    }
+  });
+}
+
+
+$(".photo-like").click(function() {
+    if($(this).hasClass("dislike")) {
+        $(this).attr("src", "/images/Photos/like.png").removeClass("dislike").addClass("like");
+        addLikeCount($(this).parent().attr("id"));
+    } else {
+        $(this).attr("src", "/images/Photos/dislike.png").removeClass("like").addClass("dislike");
+        deleteLikeCount($(this).parent().attr("id"));
+    }
+});
+
+$(function() {
+  showLikeTime();
+})</script></body></html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html><html lang="zh-cn"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="author" content="Yanting Lam"><meta name="description" content="什么是分布式集群？&amp;emsp;&amp;emsp;首先看看分布式与集群之间的区别与联系：分布式是指将不同的业务分布在不同的地方；而集群是指将同一个业务部署到多台机器上分布式的组织比较松散；而集群有一定的组织分布式每一个节点完成不同的业务，一旦一个节点宕掉了，在这个节点上的业务就不"><meta name="keywords" content="分布式"><title>分布式集群 · Yanting Lam</title><link rel="icon" href="/favicon.ico"><link rel="canonical" href="http://yantinglam.com/2016/12/13/Distrubited-2016-12-13-Distributed-cluster/"><link rel="alternate" href="/atom.xml" title="Yanting Lam"><link rel="stylesheet" href="/css/style.css"><script type="text/javascript">var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?8e7c7417ad2e322a37d13dc7cdc5454e";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script><script src="https://cdn1.lncld.net/static/js/av-min-1.2.1.js"></script><script type="text/javascript">AV.initialize("h9D4obRhn4aqzazLSG9Kxa2k-gzGzoHsz", "pRL4WjJEgaARQXXRWHLXbBgw")</script></head><body><div id="main"><header><a href="/." class="logo">Yanting Lam</a><ul class="nav"><li class="nav-link"><a href="/" target="_self">首页</a></li><li class="nav-link"><a href="/archives/" target="_self">归档</a></li><li class="nav-link"><a href="/tags/" target="_self">标签</a></li><li class="nav-link"><a href="/photography/" target="_self">摄影集</a></li></ul></header><section id="container"><article class="post"><h1 class="post-title">分布式集群</h1><p class="post-meta"><span class="post-time">发表于 2016-12-13</span><span id="/2016/12/13/Distrubited-2016-12-13-Distributed-cluster/" data-flag-title="分布式集群" class="leancloud-visitors"><span class="leancloud-visitors-text">阅读次数 </span><span class="leancloud-visitors-count"></span></span></p><div id="sidebar" class="post-sidebar"><h3 class="heading">目录</h3><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#什么是分布式集群？"><span class="toc-text">什么是分布式集群？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#为什么要使用分布式集群？"><span class="toc-text">为什么要使用分布式集群？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#如何使用分布式集群？"><span class="toc-text">如何使用分布式集群？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#使用分布式集群应该注意的地方"><span class="toc-text">使用分布式集群应该注意的地方</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#分布式集群的设计原则"><span class="toc-text">分布式集群的设计原则</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#数据一致性的解决方案"><span class="toc-text">数据一致性的解决方案</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#数据可用性"><span class="toc-text">数据可用性</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#分区容错性"><span class="toc-text">分区容错性</span></a></li></ol></li></ol></div><div class="post-content"><h3 id="什么是分布式集群？"><a href="#什么是分布式集群？" class="headerlink" title="什么是分布式集群？"></a>什么是分布式集群？</h3><p>&emsp;&emsp;首先看看分布式与集群之间的区别与联系：</p>
+<ul>
+<li>分布式是指将不同的业务分布在不同的地方；而集群是指将同一个业务部署到多台机器上</li>
+<li>分布式的组织比较松散；而集群有一定的组织</li>
+<li>分布式每一个节点完成不同的业务，一旦一个节点宕掉了，在这个节点上的业务就不可访问了；而集群里一旦某一台服务器宕掉了，其他的服务器可以顶上来</li>
+<li>分布式的每一个节点都可以做成一个集群<a id="more"></a>
+</li>
+</ul>
+<p>&emsp;&emsp;所以分布式集群就是结合了分布式与集群的特征，相互取长补短，构建一个更加高效可用的系统模型。</p>
+<h3 id="为什么要使用分布式集群？"><a href="#为什么要使用分布式集群？" class="headerlink" title="为什么要使用分布式集群？"></a>为什么要使用分布式集群？</h3><p>&emsp;&emsp;在实例生产中，单独使用分布式或单独使用集群的意义都不太大，分布式解决了应用服务业务或功能上的松耦合，但不能保证系统的高可靠性；而集群解决了应用服务处理高并发的能力，但不能很好的做应用服务的业务层扩展。所以分布式与集群应该是相辅相成、相互合作的关系。</p>
+<h3 id="如何使用分布式集群？"><a href="#如何使用分布式集群？" class="headerlink" title="如何使用分布式集群？"></a>如何使用分布式集群？</h3><p>&emsp;&emsp;在设计分布式集群系统的时候要注意以下几点：</p>
+<ul>
+<li><p>减少网络通信的开销</p>
+<p class="li-explanation">&emsp;&emsp;因为分布式集群的各个服务器之间的通信是通过网络进行，所以网络是分布式集群的一个必要条件。而目前网络的传输速度还赶不上CPU读取内存或硬盘的速度，这会成为系统性能提升的一个瓶颈点。为了减少这方面带来的影响，在设计上应该减少各个业务或功能模块之间不太必要的通信。</p>
+</li>
+<li><p>将应用做成无状态的</p>
+<p class="li-explanation">&emsp;&emsp;首先搞清楚应用服务的状态指的是运行时程序因处理服务请求而存在内存里的数据。为什么要设计成无状态呢？是由于用户发起请求是对某一台服务器发起请求的，而这些用户请求信息只会存在于该台服务器上，如果此时该台服务器出现故障宕掉了，虽然其他服务器可以顶上代替该台服务器让应用继续运行，但是保存在故障服务器上的用户请求数据必然导致丢失，这就违背了高可靠的特性了。</p>
+
+</li>
+</ul>
+<h3 id="使用分布式集群应该注意的地方"><a href="#使用分布式集群应该注意的地方" class="headerlink" title="使用分布式集群应该注意的地方"></a>使用分布式集群应该注意的地方</h3><ul>
+<li>网络性能的瓶颈</li>
+<li>服务器数量越多，宕机的概率就越大</li>
+<li>数据一致性的处理<p class="li-explanation">&emsp;&emsp;因为在数据库的集群搭建是将多个数据备份部署到多个服务器上面，那么如何同步各个服务器之间的数据，让它们保持一致性就是一个必须要考虑的问题。</p>
+
+</li>
+</ul>
+<h3 id="分布式集群的设计原则"><a href="#分布式集群的设计原则" class="headerlink" title="分布式集群的设计原则"></a>分布式集群的设计原则</h3><p>&emsp;&emsp;分布式集群的设计遵循CAP理论。所谓CAP理论是一个分布式系统最多只能同时满足数据一致性（Consistency）、可用性（Availability）、分区容错性（Partition tolerance）这三项中的两项。</p>
+<h4 id="数据一致性的解决方案"><a href="#数据一致性的解决方案" class="headerlink" title="数据一致性的解决方案"></a>数据一致性的解决方案</h4><ul>
+<li>强一致性：更新过的数据都能被后续的访问看到</li>
+<li>弱一致性：能容忍后续的部分或全部访问看不到</li>
+<li>最终一致性：经过一段时间后能访问到</li>
+</ul>
+<h4 id="数据可用性"><a href="#数据可用性" class="headerlink" title="数据可用性"></a>数据可用性</h4><p>&emsp;&emsp;数据可用性是指对数据的读与写永远有效，这与数据冗余和负载均衡有着很大的联系。</p>
+<h4 id="分区容错性"><a href="#分区容错性" class="headerlink" title="分区容错性"></a>分区容错性</h4><p>&emsp;&emsp;分区容错性是指分布式系统在遇到某节点或分区出现故障时，仍然能对外提供一致性和可用性的服务。</p>
+</div></article><div class="tags"><a href="/tags/分布式/">分布式</a></div><div class="paginator"><a href="/2016/12/14/Microservices-2016-12-14-Fundamentals-of-micro-service/" class="prev"><i class="iconfont icon-left"></i><span> 上一页</span></a><a href="/2016/12/13/Distrubited-2016-12-13-Cluster/" class="next"><span>下一页</span><i class="iconfont icon-right"></i></a></div><section id="comments"><div data-thread-key="http://yantinglam.com/2016/12/13/Distrubited-2016-12-13-Distributed-cluster/index.html" data-title="分布式集群" data-url="http://yantinglam.com/2016/12/13/Distrubited-2016-12-13-Distributed-cluster/index.html" class="ds-thread"></div><script type="text/javascript">var duoshuoQuery = {short_name: "yantinglam" };
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();</script></section></section><footer><div class="social"><a href="mailto:linyantingly@163.com" title="email" class="iconfont icon-email"></a><a href="https://github.com/yantinglam" title="github" class="iconfont icon-github"></a><a href="/atom.xml" title="rss" class="iconfont icon-rss"></a></div><div class="friendly-links"><h6 class="friendly-links-text">友情链接</h6><a href="http://davidleee.com/" class="friendly-links-url">David Lee(IOS工程师)</a></div><div class="copyright"><p class="power">Powered by <a href="https://hexo.io/">Hexo</a> and Theme by <a href="https://github.com/ahonn/hexo-theme-even"> Even</a></p><p class="since">&copy;2017<span class="heart"><i class="iconfont icon-heart"></i></span><span class="author">Yanting Lam</span></p><p class="calculate"><script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次</span></p></div><div id="back2top"><i class="iconfont icon-up"></i></div></footer></div><script src="/js/zepto.min.js"></script><script src="/js/theme.js"></script><script type="text/javascript">function showPostTime(Counter) {
+    var query = new AV.Query(Counter);
+    var entries = [];
+    var $visitors = $(".leancloud-visitors");
+
+    $visitors.each(function () {
+      entries.push( $(this).attr("id").trim() );
+    });
+
+    query.containedIn('url', entries);
+    query.find()
+      .done(function (results) {
+        var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+        $visitors.find(COUNT_CONTAINER_REF).text(0);
+
+        for (var i = 0; i < results.length; i++) {
+          var item = results[i];
+          var url = item.get('url');
+          var time = item.get('time');
+          var element = document.getElementById(url);
+
+          $(element).find(COUNT_CONTAINER_REF).text(time);
+        }
+      })
+      .fail(function (object, error) {
+        console.log("Error: " + error.code + " " + error.message);
+      });
+  }
+
+  function addPostCount(Counter) {
+    var $visitors = $(".leancloud-visitors");
+    var url = $visitors.attr('id').trim();
+    var title = $visitors.attr('data-flag-title').trim();
+    var query = new AV.Query(Counter);
+
+    query.equalTo("url", url);
+    query.find({
+      success: function(results) {
+        if (results.length > 0) {
+          var counter = results[0];
+          counter.fetchWhenSave(true);
+          counter.increment("time");
+          counter.save(null, {
+            success: function(counter) {
+              var $element = $(document.getElementById(url));
+              $element.find('.leancloud-visitors-count').text(counter.get('time'));
+            },
+            error: function(counter, error) {
+              console.log('Failed to save Visitor num, with error message: ' + error.message);
+            }
+          });
+        } else {
+          var newcounter = new Counter();
+          newcounter.set("title", title);
+          newcounter.set("url", url);
+          newcounter.set("time", 1);
+          newcounter.save(null, {
+            success: function(newcounter) {
+              var $element = $(document.getElementById(url));
+              $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+            },
+            error: function(newcounter, error) {
+              console.log('Failed to create');
+            }
+          });
+        }
+      },
+      error: function(error) {
+        console.log('Error:' + error.code + " " + error.message);
+      }
+    });
+  }
+
+  $(function() {
+    var Counter = AV.Object.extend("Counter");
+    if ($('.leancloud-visitors').length == 1) {
+      addPostCount(Counter);
+    } else if ($('.post-link').length > 1) {
+      showPostTime(Counter);
+    }
+  });
+</script><script type="text/javascript">function showLikeTime() {
+  //- var LikeCounter = AV.Object.extend("LikeCounter");
+  var query = new AV.Query("LikeCounter");
+  var entries = [];
+  var $like = $(".photo-meta");
+
+  $like.each(function () {
+    entries.push( $(this).attr("id").trim() );
+  });
+
+  query.find()
+    .done(function (results) {
+      console.log(results);
+      var COUNT_CONTAINER_REF = '.like-num';
+
+      $like.find(COUNT_CONTAINER_REF).text(0);
+
+      for (var i = 0; i < results.length; i++) {
+        var item = results[i];
+        var name = item.get('name');
+        var time = item.get('time');
+        var element = document.getElementById(name);
+
+        $(element).find(COUNT_CONTAINER_REF).text(time);
+      }
+    })
+    .fail(function (object, error) {
+      console.log("Error: " + error.code + " " + error.message);
+    });
+}
+
+function addLikeCount(name) {
+  var LikeCounter = AV.Object.extend("LikeCounter");
+  var query = new AV.Query(LikeCounter);
+
+  query.equalTo("name", name);
+  query.find({
+    success: function(results) {
+      console.log(results);
+      if (results.length > 0) {
+        var counter = results[0];
+        counter.fetchWhenSave(true);
+        counter.increment("time");
+        counter.save(null, {
+          success: function(counter) {
+            var $element = $(document.getElementById(name));
+            $element.find('.like-num').text(counter.get('time'));
+          },
+          error: function(counter, error) {
+            console.log('Failed to save Visitor num, with error message: ' + error.message);
+          }
+        });
+      } else {
+        var newcounter = new LikeCounter();
+        newcounter.set("name", name);
+        newcounter.set("time", 1);
+        newcounter.save(null, {
+          success: function(newcounter) {
+            var $element = $(document.getElementById(name));
+            $element.find('.like-num').text(newcounter.get('time'));
+          },
+          error: function(newcounter, error) {
+            console.log('Failed to create');
+          }
+        });
+      }
+    },
+    error: function(error) {
+      console.log('Error:' + error.code + " " + error.message);
+    }
+  });
+}
+
+function deleteLikeCount(name) {
+  var LikeCounter = AV.Object.extend("LikeCounter");
+  var query = new AV.Query(LikeCounter);
+
+  query.equalTo("name", name);
+  query.find({
+    success: function(results) {
+      console.log(results);
+      if (results.length > 0) {
+        var counter = results[0];
+        counter.fetchWhenSave(true);
+        counter.increment("time", -1);
+        counter.save(null, {
+          success: function(counter) {
+            var $element = $(document.getElementById(name));
+            $element.find('.like-num').text(counter.get('time'));
+          },
+          error: function(counter, error) {
+            console.log('Failed to save Visitor num, with error message: ' + error.message);
+          }
+        });
+      }
+    },
+    error: function(error) {
+      console.log('Error:' + error.code + " " + error.message);
+    }
+  });
+}
+
+
+$(".photo-like").click(function() {
+    if($(this).hasClass("dislike")) {
+        $(this).attr("src", "/images/Photos/like.png").removeClass("dislike").addClass("like");
+        addLikeCount($(this).parent().attr("id"));
+    } else {
+        $(this).attr("src", "/images/Photos/dislike.png").removeClass("like").addClass("dislike");
+        deleteLikeCount($(this).parent().attr("id"));
+    }
+});
+
+$(function() {
+  showLikeTime();
+})</script></body></html>
