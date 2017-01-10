@@ -24,7 +24,14 @@
 <p>4.重启Ribbon服务，再次访问<a href="http://localhost:3333/add" target="_blank" rel="external">http://localhost:3333/add</a> ，此时得到返回的错误字符串”error”。<br><img src="/images/SpringCloud/Spring-Cloud-Hystrix/Compute-service-errorFallback.png" width="100" height="80"></p>
 <p>这说明了Hystrix功能起了作用，加入了这个功能之后，就可以设定不同的错误返回来应对不同的错误场景，提高应用的效率以及用户体验。</p>
 <h3 id="解决加入Hystrix后第一次请求失败"><a href="#解决加入Hystrix后第一次请求失败" class="headerlink" title="解决加入Hystrix后第一次请求失败"></a>解决加入Hystrix后第一次请求失败</h3><p>&emsp;&emsp;在实现Hystrix的过程中，发现了一个问题，就是在加入了Hystrix之后，第一次通过访问<a href="http://localhost:3333/add" target="_blank" rel="external">http://localhost:3333/add</a> 来消费服务的时候，会返回“error”错误信息，再次刷新之后才会显示正确的结果，而且之后的访问都是正常的。</p>
-<p>&emsp;&emsp;造成这个问题的原因是什么呢？</p>
+<p>&emsp;&emsp;造成这个问题的原因是什么呢？上网找了一下，原因在于Hystrix的默认超时时间为1秒，而第一次请求因为懒加载机制以及一些类的实例化，使得响应时间往往会大于1秒，这就会使用Hystrix因为超时而进入到错误回调函数，因此会返回错误结果。因此可以通过配置超时时间或禁用Hystrix超时来解决这个问题。</p>
+<ul>
+<li><p>配置超时时间方法：在application.properties中添加以下配置信息<br>  hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds: 5000 //配置超时时间为5秒</p>
+</li>
+<li><p>禁用Hystrix超时：在application.properties中添加以下配置信息<br>  hystrix.command.default.execution.timeout.enabled: false</p>
+</li>
+</ul>
+<p>&emsp;&emsp;以上的两个方法要根据应用的实际情况，谨慎选择。</p>
 <p><br><br>参考链接：<br><a href="http://blog.didispace.com/springcloud3/" target="_blank" rel="external">Spring Cloud构建微服务架构（三）断路器</a></p>
 </div></article><div class="tags"><a href="/tags/微服务/">微服务</a><a href="/tags/Spring-Cloud/">Spring Cloud</a></div><div class="paginator"><a href="/2016/12/28/SpringCloud-2016-12-28-Spring-Cloud-Feign/" class="prev"><i class="iconfont icon-left"></i><span> 上一页</span></a><a href="/2016/12/21/Seven-years-is-a-life-2016-12-21-Compound-interest/" class="next"><span>下一页</span><i class="iconfont icon-right"></i></a></div><section id="comments"><div data-thread-key="http://yantinglam.com/2016/12/23/SpringCloud-2016-12-23-Spring-Cloud-Hystrix/index.html" data-title="Spring-Cloud - 断路器" data-url="http://yantinglam.com/2016/12/23/SpringCloud-2016-12-23-Spring-Cloud-Hystrix/index.html" class="ds-thread"></div><script type="text/javascript">var duoshuoQuery = {short_name: "yantinglam" };
 (function() {
