@@ -21,7 +21,7 @@
 <ul>
 <li>此例子中指定失败回调方法为addServiceFallback()，该方法返回字符串”error” </li>
 </ul>
-<p>4.重启Ribbon服务，再次访问<a href="http://localhost:3333/add" target="_blank" rel="external">http://localhost:3333/add</a> ，此时得到返回的错误字符串”error”。<br><img src="/images/SpringCloud/Spring-Cloud-Hystrix/Compute-service-errorFallback.png" width="300" height="100"></p>
+<p>4.重启Ribbon服务，再次访问<a href="http://localhost:3333/add" target="_blank" rel="external">http://localhost:3333/add</a> ，此时得到返回的错误字符串”error”。<br><img src="/images/SpringCloud/Spring-Cloud-Hystrix/Compute-service-errorFallback.png" width="100" height="80"></p>
 <p>这说明了Hystrix功能起了作用，加入了这个功能之后，就可以设定不同的错误返回来应对不同的错误场景，提高应用的效率以及用户体验。</p>
 <h3 id="解决加入Hystrix后第一次请求失败"><a href="#解决加入Hystrix后第一次请求失败" class="headerlink" title="解决加入Hystrix后第一次请求失败"></a>解决加入Hystrix后第一次请求失败</h3><p>&emsp;&emsp;在实现Hystrix的过程中，发现了一个问题，就是在加入了Hystrix之后，第一次通过访问<a href="http://localhost:3333/add" target="_blank" rel="external">http://localhost:3333/add</a> 来消费服务的时候，会返回“error”错误信息，再次刷新之后才会显示正确的结果，而且之后的访问都是正常的。</p>
 <p>&emsp;&emsp;造成这个问题的原因是什么呢？</p>
